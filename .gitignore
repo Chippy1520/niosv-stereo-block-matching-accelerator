@@ -1,0 +1,51 @@
+# Quartus generated files
+*.qws
+*.qpf.user
+*.rpt
+*.summary
+*.smsg
+*.jdi
+*.sof
+*.pof
+*.rbf
+*.qdf
+*.done
+*.pin
+*.sld
+*.sopcinfo
+db/
+incremental_db/
+output_files/
+simulation/
+qdb/
+
+# Nios software build artifacts
+Debug/
+Release/
+*.elf
+*.map
+*.obj
+*.o
+*.a
+
+# Dataset/generated output
+data/
+generated/
+*.raw
+*.pgm
+*.pfm
+
+# Generated report intermediates
+docs/.preview/
+docs/*.html
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Editors/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
