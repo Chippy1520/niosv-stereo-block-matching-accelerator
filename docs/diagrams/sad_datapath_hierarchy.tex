@@ -1,0 +1,44 @@
+\documentclass[tikz,border=7pt]{standalone}
+\input{tikz_style.tex}
+
+\begin{document}
+\begin{tikzpicture}[node distance=8mm and 8mm]
+  \node[labeltag] (title) {LEVEL 3 --- PARAMETERIZED SAD DATAPATH};
+
+  \node[accel, text width=31mm, below=11mm of title] (pixels) {\textbf{Aligned pixel stream}\\[-1pt]\scriptsize left pixel, right history, $(x,y)$, validity};
+  \node[accel, text width=31mm, right=8mm of pixels] (taps) {\textbf{Disparity tap bank}\\[-1pt]\scriptsize select $R(x-d_k,y)$ for $k=0\ldots P-1$};
+
+  \node[accel, text width=27mm, right=11mm of taps, yshift=19mm] (lane0) {\textbf{Lane 0}\\[-1pt]\scriptsize absdiff $\rightarrow$ horizontal sliding sum $\rightarrow$ vertical box sum};
+  \node[accel, text width=27mm, below=5mm of lane0] (lane1) {\textbf{Lane 1}\\[-1pt]\scriptsize absdiff $\rightarrow$ horizontal sliding sum $\rightarrow$ vertical box sum};
+  \node[font=\bfseries\large, below=2mm of lane1] (dots) {$\vdots$};
+  \node[accel, text width=27mm, below=2mm of dots] (lanep) {\textbf{Lane $P-1$}\\[-1pt]\scriptsize absdiff $\rightarrow$ horizontal sliding sum $\rightarrow$ vertical box sum};
+  \begin{scope}[on background layer]
+    \node[group, fit=(lane0)(lane1)(dots)(lanep)] (lanes) {};
+  \end{scope}
+  \node[labeltag, anchor=south west, fill=cyan!80!navy] at ([xshift=2mm,yshift=-1mm]lanes.north west) {GENERATE $P$ LANES};
+
+  \node[accel, text width=34mm, right=12mm of lanes] (reduce) {\textbf{Candidate reducer}\\[-1pt]\scriptsize compare-tree selects minimum $(cost, disparity)$ using fixed tie rule};
+  \node[memory, text width=31mm, above=9mm of reduce] (prior) {\textbf{Prior best record}\\[-1pt]\scriptsize read from SDRAM for multi-pass groups};
+  \node[accel, text width=34mm, right=9mm of reduce] (merge) {\textbf{Best-state merge}\\[-1pt]\scriptsize compare group winner with prior best; preserve cost + disparity};
+  \node[accel, text width=31mm, right=9mm of merge] (out) {\textbf{Output record}\\[-1pt]\scriptsize updated best cost, disparity, valid, $(x,y)$};
+
+  \draw[dataflow] (pixels) -- (taps);
+  \draw[dataflow] (taps.east) -- ++(5mm,0) |- (lane0.west);
+  \draw[dataflow] (taps.east) -- ++(5mm,0) |- (lane1.west);
+  \draw[dataflow] (taps.east) -- ++(5mm,0) |- (lanep.west);
+  \draw[dataflow] (lane0.east) -- ++(5mm,0) |- (reduce.west);
+  \draw[dataflow] (lane1.east) -- ++(5mm,0) |- (reduce.west);
+  \draw[dataflow] (lanep.east) -- ++(5mm,0) |- (reduce.west);
+  \draw[dataflow] (reduce) -- (merge);
+  \draw[dataflow] (prior) -- (merge);
+  \draw[dataflow] (merge) -- (out);
+
+  \node[control, text width=39mm] (valid) at ($(lanes.south)!0.55!(merge.south)+(0,-18mm)$) {\textbf{Validity and backpressure pipeline}\\[-1pt]\scriptsize delay metadata with arithmetic; stall every stage together when downstream \texttt{ready}=0};
+  \draw[controlflow] (valid.north) -- (reduce.south);
+  \draw[controlflow] (valid.west) -| (taps.south);
+  \draw[controlflow] (valid.east) -| (merge.south);
+
+  \node[note, text width=59mm, below=9mm of valid] (params) {\textbf{Compile-time parameters:} \texttt{P\_LANES}, \texttt{D\_MAX}, \texttt{WIN\_W}, \texttt{WIN\_H}, \texttt{PIX\_W}, and derived \texttt{COST\_W}. Scaling changes the lane array, tap storage, reducer, and number of disparity-group passes.};
+  \draw[draw=line, rounded corners=2pt] ([xshift=-2mm,yshift=-2mm]params.south west) rectangle ([xshift=2mm,yshift=2mm]params.north east);
+\end{tikzpicture}
+\end{document}

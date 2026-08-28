@@ -38,6 +38,9 @@ generated/
 # Generated report intermediates
 docs/.preview/
 docs/*.html
+docs/diagrams/*.aux
+docs/diagrams/*.log
+docs/diagrams/*.xdv
 
 # Python
 __pycache__/

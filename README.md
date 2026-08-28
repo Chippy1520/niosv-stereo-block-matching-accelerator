@@ -7,6 +7,8 @@ A semester-project workspace for a scalable stereo block-matching accelerator on
 ## Primary report
 
 - **[Download the PDF feasibility and architecture report](docs/stereo_block_matching_feasibility_report.pdf)**
+- **[Download the top-down design hierarchy PDF](docs/design_hierarchy.pdf)** — block responsibilities, interfaces, implementation, verification, RTL tree, and build gates
+- [Design hierarchy source](docs/design_hierarchy.md)
 - [Markdown source](docs/stereo_block_matching_feasibility_report.md)
 - [Curated videos, documentation, datasets, and reference projects](docs/resources.md)
 - [Integration checklist](docs/integration_checklist.md)
@@ -14,18 +16,19 @@ A semester-project workspace for a scalable stereo block-matching accelerator on
 
 ## Proposed architecture
 
-```text
-Nios V CPU ───────────────┐
-                         ├── Platform Designer interconnect ── Shared SDRAM
-Stereo accelerator ──────┘          │
-  ├─ Avalon-MM control slave         ├─ left/right image buffers
-  ├─ Avalon-MM memory master         ├─ best-cost/disparity workspace
-  ├─ line/window buffers             └─ output disparity maps
-  ├─ parallel SAD lanes
-  └─ winner-take-all disparity
-```
+![Top-down project hierarchy](docs/diagrams/design_hierarchy.png)
 
 The CPU and accelerator access the same SDRAM. Internal line buffers and FIFOs are transient streaming-reuse structures—not a CPU-managed private frame store.
+
+Additional LaTeX/TikZ diagrams:
+
+- [System-level CPU/accelerator interconnect](docs/diagrams/system_architecture.pdf)
+- [Accelerator subsystem hierarchy](docs/diagrams/accelerator_hierarchy.pdf)
+- [Accelerator streaming datapath](docs/diagrams/accelerator_pipeline.pdf)
+- [Parameterized SAD datapath](docs/diagrams/sad_datapath_hierarchy.pdf)
+- [Proposed RTL module tree](docs/diagrams/rtl_module_tree.pdf)
+- [End-to-end CPU/accelerator execution flow](docs/diagrams/execution_flow.pdf)
+- [Editable TikZ sources](docs/diagrams/)
 
 ## Repository layout
 

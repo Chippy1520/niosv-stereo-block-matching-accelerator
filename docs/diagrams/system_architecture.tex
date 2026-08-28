@@ -1,0 +1,48 @@
+\documentclass[tikz,border=7pt]{standalone}
+\input{tikz_style.tex}
+
+\begin{document}
+\begin{tikzpicture}[node distance=11mm and 15mm]
+  % CPU subsystem
+  \node[cpu, text width=34mm] (cpu) {\textbf{Nios V processor}\\[-1pt]\scriptsize AXI4 instruction/data managers};
+  \node[smallblock, cpu, below=6mm of cpu] (jtag) {JTAG UART};
+  \node[smallblock, cpu, below=4mm of jtag] (timer) {Timer / cycle counter};
+  \begin{scope}[on background layer]
+    \node[group, fit=(cpu)(jtag)(timer)] (cpugroup) {};
+  \end{scope}
+  \node[labeltag, anchor=south west] at ([xshift=2mm,yshift=-1mm]cpugroup.north west) {SOFTWARE SUBSYSTEM};
+
+  % Interconnect
+  \node[control, text width=39mm, right=25mm of cpu] (fabric) {\textbf{Platform Designer interconnect}\\[-1pt]\scriptsize AXI/Avalon adaptation, arbitration, address decoding};
+
+  % SDRAM
+  \node[memory, text width=37mm, right=25mm of fabric] (sdram) {\textbf{External shared SDRAM}\\[-1pt]\scriptsize left/right frames, best-cost state, disparity output};
+
+  % Accelerator subsystem
+  \node[accel, text width=34mm, below=24mm of fabric] (ctrl) {\textbf{Control/status slave}\\[-1pt]\scriptsize base addresses, dimensions, start/done, counters};
+  \node[accel, text width=34mm, below=6mm of ctrl] (master) {\textbf{Avalon-MM memory master}\\[-1pt]\scriptsize burst reader and writer};
+  \node[accel, text width=34mm, below=6mm of master] (pipeline) {\textbf{Stereo SAD pipeline}\\[-1pt]\scriptsize line buffers, $P$ disparity lanes, winner-take-all};
+  \begin{scope}[on background layer]
+    \node[group, fit=(ctrl)(master)(pipeline)] (accgroup) {};
+  \end{scope}
+  \node[labeltag, anchor=south west, fill=cyan!80!navy] at ([xshift=2mm,yshift=-1mm]accgroup.north west) {DOMAIN ACCELERATOR};
+
+  % Connections
+  \draw[bus] (cpu.east) -- node[arrowlabel, above] {CPU memory traffic} (fabric.west);
+  \draw[bus] (fabric.east) -- node[arrowlabel, above] {shared memory path} (sdram.west);
+  \draw[controlflow] (fabric.south) -- ++(0,-7mm) -| ([xshift=11mm]ctrl.east) |- node[arrowlabel, near end, right] {register access} (ctrl.east);
+  \draw[dataflow] (master.east) -| node[arrowlabel, near start, below] {burst reads/writes} ([xshift=8mm]fabric.south east) |- (fabric.south east);
+  \draw[flow] (ctrl.south) -- (master.north);
+  \draw[flow] (master.south) -- (pipeline.north);
+  \draw[returnflow] (pipeline.west) -| node[arrowlabel, near end, left] {status / counters} (ctrl.west);
+  \draw[controlflow] (timer.east) -| node[arrowlabel, near start, below] {benchmark control} (ctrl.west);
+
+  % Shared-memory requirement annotation
+  \node[note, text width=58mm, below=10mm of pipeline] (note) {\textbf{Shared-memory rule:} both masters access the same SDRAM address space. Internal FIFOs and line buffers retain only transient in-flight data; they are not CPU-managed private frame stores.};
+  \draw[draw=line, rounded corners=2pt] ([xshift=-2mm,yshift=-2mm]note.south west) rectangle ([xshift=2mm,yshift=2mm]note.north east);
+
+  % Legend
+  \node[font=\sffamily\scriptsize, text=blue, below=9mm of sdram] (ld) {\rule{8mm}{1.1pt}\;data/bus path};
+  \node[font=\sffamily\scriptsize, text=orange, below=3mm of ld] {\rule{8mm}{0.7pt}\;control path};
+\end{tikzpicture}
+\end{document}

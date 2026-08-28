@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the report as styled HTML and PDF using bundled Pandoc + Microsoft Edge."""
+"""Build the detailed design-hierarchy specification as HTML and PDF."""
 
 from __future__ import annotations
 
@@ -11,10 +11,10 @@ import time
 import pypandoc
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "docs" / "stereo_block_matching_feasibility_report.md"
+SOURCE = ROOT / "docs" / "design_hierarchy.md"
 CSS = ROOT / "tools" / "report.css"
-HTML = ROOT / "docs" / "stereo_block_matching_feasibility_report.html"
-PDF = ROOT / "docs" / "stereo_block_matching_feasibility_report.pdf"
+HTML = ROOT / "docs" / "design_hierarchy.html"
+PDF = ROOT / "docs" / "design_hierarchy.pdf"
 EDGE_CANDIDATES = [
     pathlib.Path(r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"),
     pathlib.Path(r"C:\Program Files\Microsoft\Edge\Application\msedge.exe"),
@@ -25,14 +25,8 @@ def main() -> int:
     if not SOURCE.exists():
         raise FileNotFoundError(SOURCE)
 
-    source_text = SOURCE.read_text(encoding="utf-8")
-    # The Markdown starts with a repository-friendly title block. The PDF gets
-    # a dedicated cover, so begin the Pandoc body at the first separator.
-    if "\n---\n" in source_text:
-        source_text = source_text.split("\n---\n", 1)[1]
-
-    pypandoc.convert_text(
-        source_text,
+    pypandoc.convert_file(
+        str(SOURCE),
         "html5",
         format="markdown+tex_math_dollars+tex_math_single_backslash",
         outputfile=str(HTML),
@@ -45,24 +39,24 @@ def main() -> int:
             f"--resource-path={ROOT / 'docs'}",
             f"--css={CSS}",
             "--metadata=lang:en",
-            "--metadata=pagetitle:Stereo Block-Matching Accelerator Report",
+            "--metadata=pagetitle:Top-Down Stereo Accelerator Design Hierarchy",
         ],
     )
 
     html_text = HTML.read_text(encoding="utf-8")
     cover = """
 <section class="title-page">
-  <div class="cover-kicker">DIGITAL SYSTEM DESIGN · SEMESTER PROJECT</div>
-  <h1>Scalable Shared-Memory<br>Stereo Block-Matching Accelerator</h1>
-  <p class="cover-subtitle">Architecture, Nios V integration, feasibility, dataset strategy, verification, and implementation roadmap</p>
+  <div class="cover-kicker">DIGITAL SYSTEM DESIGN · ARCHITECTURE SPECIFICATION</div>
+  <h1>Top-Down Design Hierarchy</h1>
+  <p class="cover-subtitle">Scalable shared-memory stereo block-matching accelerator: responsibilities, interfaces, implementation contracts, verification, and integration gates</p>
   <div class="cover-rule"></div>
   <dl class="cover-meta">
     <dt>Target platform</dt><dd>Terasic DE2-115 · Cyclone IV EP4CE115</dd>
     <dt>Compute system</dt><dd>Nios V CPU + parameterized SAD accelerator + shared SDRAM</dd>
-    <dt>Team</dt><dd>Three members</dd>
-    <dt>Current progress</dt><dd>Nios V Hello World verified on the FPGA</dd>
+    <dt>Abstraction</dt><dd>System mission → partition → subsystems → datapath → RTL → build gates</dd>
+    <dt>Team</dt><dd>Three members with explicit integration boundaries</dd>
   </dl>
-  <p class="cover-note">Feasibility and architecture report</p>
+  <p class="cover-note">Top-down architecture and implementation specification</p>
 </section>
 """
     toc_marker = '<nav id="TOC" role="doc-toc">'
@@ -77,18 +71,20 @@ def main() -> int:
         print("Microsoft Edge was not found; PDF was not generated.", file=sys.stderr)
         return 2
 
-    if PDF.exists():
-        PDF.unlink()
-
-    command = [
-        str(edge),
-        "--headless",
-        "--disable-gpu",
-        "--no-pdf-header-footer",
-        f"--print-to-pdf={PDF}",
-        HTML.resolve().as_uri(),
-    ]
-    completed = subprocess.run(command, check=False, capture_output=True, text=True)
+    PDF.unlink(missing_ok=True)
+    completed = subprocess.run(
+        [
+            str(edge),
+            "--headless",
+            "--disable-gpu",
+            "--no-pdf-header-footer",
+            f"--print-to-pdf={PDF}",
+            HTML.resolve().as_uri(),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
     if completed.returncode != 0:
         print(completed.stdout)
         print(completed.stderr, file=sys.stderr)

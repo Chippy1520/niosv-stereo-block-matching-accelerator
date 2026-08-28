@@ -1,0 +1,43 @@
+\documentclass[tikz,border=7pt]{standalone}
+\input{tikz_style.tex}
+
+\begin{document}
+\begin{tikzpicture}[node distance=8mm and 8mm]
+  \node[memory, text width=27mm] (sdramIn) {\textbf{Shared SDRAM}\\[-1pt]\scriptsize left/right images};
+  \node[smallblock, accel, right=of sdramIn] (reader) {Burst reader};
+  \node[smallblock, accel, right=of reader] (fifoIn) {Input FIFOs};
+  \node[accel, text width=29mm, right=of fifoIn] (history) {\textbf{Line / history buffers}\\[-1pt]\scriptsize raster reuse and right-image disparity taps};
+
+  \node[accel, text width=32mm, below=17mm of history] (abs) {\textbf{$P$ absolute-difference lanes}\\[-1pt]\scriptsize $A_d(x,y)=|L(x,y)-R(x-d,y)|$};
+  \node[accel, text width=29mm, left=of abs] (box) {\textbf{Window SAD accumulators}\\[-1pt]\scriptsize horizontal + vertical box sums};
+  \node[accel, text width=28mm, left=of box] (wta) {\textbf{Winner-take-all}\\[-1pt]\scriptsize best cost, disparity, optional second-best};
+  \node[smallblock, accel, left=of wta] (fifoOut) {Output FIFO};
+  \node[smallblock, accel, left=of fifoOut] (writer) {Burst writer};
+  \node[memory, text width=29mm, left=of writer] (sdramOut) {\textbf{Shared SDRAM}\\[-1pt]\scriptsize best state / disparity map};
+
+  \draw[dataflow] (sdramIn) -- (reader);
+  \draw[dataflow] (reader) -- (fifoIn);
+  \draw[dataflow] (fifoIn) -- (history);
+  \draw[dataflow] (history.south) -- (abs.north);
+  \draw[dataflow] (abs) -- (box);
+  \draw[dataflow] (box) -- (wta);
+  \draw[dataflow] (wta) -- (fifoOut);
+  \draw[dataflow] (fifoOut) -- (writer);
+  \draw[dataflow] (writer) -- (sdramOut);
+
+  \node[control, text width=43mm, below=17mm of box] (controller) {\textbf{Frame / disparity-group controller}\\[-1pt]\scriptsize coordinates, strides, border validity, lane scheduling, start/done};
+  \node[control, text width=34mm, left=12mm of controller] (counters) {\textbf{Performance counters}\\[-1pt]\scriptsize total, active, read stalls, write stalls, pixels};
+
+  \draw[controlflow] (controller.north) -- (box.south);
+  \draw[controlflow] (controller.east) -| (history.south east);
+  \draw[controlflow] (controller.west) -| (writer.south);
+  \draw[returnflow] (reader.south) |- (counters.north);
+  \draw[returnflow] (writer.south) |- (counters.north east);
+  \draw[returnflow] (wta.south) |- (counters.east);
+
+  \node[note, text width=56mm, below=11mm of controller] (passnote) {\textbf{Baseline multi-pass schedule:} each raster pass evaluates $P$ disparities. The best-cost/disparity map in SDRAM carries state between disparity groups. Increasing $P$ reduces passes but raises lane and buffer resources.};
+  \draw[draw=line, rounded corners=2pt] ([xshift=-2mm,yshift=-2mm]passnote.south west) rectangle ([xshift=2mm,yshift=2mm]passnote.north east);
+
+  \node[labeltag, anchor=south west, fill=cyan!80!navy] at ([xshift=-1mm,yshift=5mm]sdramIn.north west) {STREAMING DATAPATH};
+\end{tikzpicture}
+\end{document}
