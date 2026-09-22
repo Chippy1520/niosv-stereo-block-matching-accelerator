@@ -1,6 +1,22 @@
 # Progress log
 
-## Current component milestone — circular column history
+## Current milestone — pipelined calculator and single engine
+
+- [x] Implement `rtl/column_sad.sv` with registered differences and balanced pipelined column reduction.
+- [x] Add tracked standalone `tb_column_sad.sv` and `tb_column_sum_buffer.sv`.
+- [x] Integrate `rtl/sad_engine.sv`; `tb_sad_engine.sv` independently recomputes full raw-pixel window SADs.
+- [x] Run eight configurations for each standalone SV bench plus six original Python-reference cases (30 total).
+- [x] Verify exact pipeline delay, bubbles, reset/clear priority, flushes, row drain/counts and no cross-row history.
+- [x] Detect four deliberately introduced faults using the new benches.
+- [x] Run an additional K=11/P=8 engine test with seed 12345, 5000 randomized cycles and VCD output.
+- [x] Synthesize `Stereo_SAD_Engine.qpf` in Quartus Lite 22.1: zero errors, zero warnings, 770 logic elements before fitting.
+- [x] Update study notes, source snapshots, architecture canvas and GitHub CI.
+
+Evidence: [module/engine regression](verification/single-engine-simulation.txt), [extra seed](verification/single-engine-extra-seed.txt), [synthesis](verification/single-engine-synthesis.md).
+
+No image-stream line buffer, disparity shifter, multi-lane bank, fitted Fmax or board integration is claimed.
+
+## Previous component milestone — circular column history
 
 - [x] Implement parameterized `rtl/column_sum_buffer.sv` for one disparity lane.
 - [x] Verify six parameter configurations using Icarus Verilog 13.0 against an independent deque reference.
@@ -10,8 +26,9 @@
 - [x] Add the Obsidian dashboard, architecture canvas, interface notes and full code walkthrough.
 - [x] Preserve prior repository history, system reports and diagram sources while making the working component the main entry point.
 - [x] Add push/PR CI for simulation and embedded-source consistency.
-- [ ] Implement upstream column absolute differences and adder tree.
-- [ ] Integrate a complete disparity lane and image line buffers.
+- [x] Implement upstream column absolute differences and adder tree (completed in engine milestone).
+- [x] Integrate one supplied-alignment SAD lane.
+- [ ] Implement image line buffers and disparity alignment.
 - [ ] Integrate parallel lanes and winner-take-all tree.
 
 Evidence: [component simulation output](verification/column-buffer-simulation.txt), [test runner](../scripts/run_tests.py), [RTL](../rtl/column_sum_buffer.sv).
@@ -47,7 +64,7 @@ This confirms the processor, clock/reset path, basic memory used by the applicat
 - [ ] Freeze pixel format, border policy, tie rule, window size, and disparity range.
 - [ ] Complete PC integer SAD reference.
 - [ ] Generate tiny exact-disparity synthetic vectors.
-- [ ] Verify one disparity lane in RTL simulation.
+- [x] Verify one supplied-alignment disparity lane in RTL simulation; pixel-column frontend still pending.
 - [ ] Verify full winner-take-all output.
 - [ ] Run one Middlebury pair end to end.
 - [ ] Synthesize multiple disparity-lane configurations.

@@ -1,95 +1,100 @@
-"""Generate independent deque-reference vectors and exercise real SystemVerilog RTL."""
-from collections import deque
-from pathlib import Path
+"""Run tracked, standalone SV module/engine benches plus the original Python reference.
+
+Examples:
+  python scripts/run_tests.py
+  python scripts/run_tests.py --suite column --case 11:8 --vcd
+  python scripts/run_tests.py --suite buffer
+  python scripts/run_tests.py --suite engine --seed 123 --random-cycles 5000
+"""
+import argparse
 import os
-import random
+from pathlib import Path
 import shutil
 import subprocess
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-BUILD = ROOT / 'build'
-BUILD.mkdir(exist_ok=True)
-(ROOT / 'sim').mkdir(exist_ok=True)
-BIN = ROOT / 'tools/mingw64/bin'
-os.environ['PATH'] = str(BIN) + os.pathsep + os.environ['PATH']
-IVERILOG = shutil.which('iverilog')
-VVP = shutil.which('vvp')
-if not IVERILOG or not VVP:
-    raise SystemExit('Install Icarus Verilog and add iverilog/vvp to PATH.')
+MATRIX = [(1, 8), (2, 8), (3, 8), (5, 8), (11, 8), (16, 8), (11, 10), (3, 1)]
+SUITES = {
+    'column': ('tb_column_sad', ['column_sad.sv']),
+    'buffer': ('tb_column_sum_buffer', ['column_sum_buffer.sv']),
+    'engine': ('tb_sad_engine', ['column_sad.sv', 'column_sum_buffer.sv', 'sad_engine.sv']),
+}
 
-TB = '''`timescale 1ns/1ps
-module tb;
-  localparam K = @K@, P = @P@;
-  localparam CW = P + $clog2(K), SW = P + $clog2(K*K);
-  reg clk=0;
-  always #5 clk=~clk;
-  reg rst_n=0, clear_i=0, valid_i=0;
-  reg [CW-1:0] column_sum_i=0;
-  wire valid_o;
-  wire [SW-1:0] sad_o;
-  column_sum_buffer #(.K(K), .PIXEL_W(P)) dut(.*);
-  integer f, rc, rn, cl, vi, col, ev, es, cycles=0, outputs=0;
-  initial begin
-    f=$fopen("vectors.txt", "r");
-    if (!f) $fatal(1,"Cannot open vectors");
-    while (!$feof(f)) begin
-      rc=$fscanf(f,"%d %d %d %d %d %d\\n",rn,cl,vi,col,ev,es);
-      if (rc != 6) $fatal(1,"Bad vector");
-      @(negedge clk);
-      rst_n=rn; clear_i=cl; valid_i=vi; column_sum_i=col;
-      @(posedge clk); #1;
-      if (valid_o !== (ev != 0) || sad_o !== SW'(es))
-        $fatal(1,"K=%0d P=%0d cycle=%0d got valid=%b sad=%0d expected valid=%0d sad=%0d",
-                 K,P,cycles,valid_o,sad_o,ev,es);
-      cycles=cycles+1;
-      if (valid_o) outputs=outputs+1;
-    end
-    $display("PASS K=%0d P=%0d cycles=%0d valid_outputs=%0d",K,P,cycles,outputs);
-    $fclose(f); $finish;
-  end
-endmodule
-'''
 
-reports = []
-for k, p in [(1,8), (2,8), (3,8), (11,8), (16,8), (11,10)]:
-    rng = random.Random(20260922 + k + p)
-    limit = k * ((1 << p) - 1)
-    inputs = [(0,0,0,0), (0,1,1,limit)]
-    # Contiguous maximum columns, wraparound, bubbles, zero windows, clear priority.
-    inputs += [(1,0,1,limit)] * (4*k+7)
-    inputs += [(1,0,0,limit)] * 3
-    inputs += [(1,0,1,0)] * (3*k+2)
-    inputs += [(1,1,1,limit)]
-    inputs += [(1,0,1,i % (limit+1)) for i in range(3*k+5)]
-    inputs += [(1,1,0,0), (1,0,1,limit), (0,0,1,limit)]
-    inputs += [(1,0,1,0)] * (k+2)
-    for _ in range(5000):
-        inputs.append((int(rng.random() > .008), int(rng.random() < .02),
-                       int(rng.random() < .77), rng.randint(0,limit)))
-    history = deque(maxlen=k)
-    last_sad = 0
-    vectors = []
-    for rn, cl, vi, col in inputs:
-        ev = 0
-        if not rn or cl:
-            history.clear()
-            last_sad = 0
-        elif vi:
-            history.append(col)
-            if len(history) == k:
-                ev = 1
-                last_sad = sum(history)
-        vectors.append(f'{rn} {cl} {vi} {col} {ev} {last_sad}\n')
-    case = BUILD / f'k{k}_p{p}'
-    case.mkdir(exist_ok=True)
-    (case/'vectors.txt').write_text(''.join(vectors))
-    (case/'tb.sv').write_text(TB.replace('@K@',str(k)).replace('@P@',str(p)))
-    for command in [[IVERILOG,'-g2012','-Wall','-s','tb','-o','sim.vvp',
-                     str(ROOT/'rtl/column_sum_buffer.sv'),'tb.sv'], [VVP,'sim.vvp']]:
-        result = subprocess.run(command,cwd=case,text=True,capture_output=True)
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--suite', choices=['all', 'column', 'buffer', 'engine', 'legacy'], default='all')
+    parser.add_argument('--case', metavar='K:PIXEL_BITS', help='One parameter case instead of the default matrix')
+    parser.add_argument('--random-cycles', type=int, default=2000)
+    parser.add_argument('--seed', type=int, help='Nonzero 32-bit xorshift seed')
+    parser.add_argument('--vcd', action='store_true', help='Write waveform.vcd per standalone test case')
+    args = parser.parse_args()
+    cases = MATRIX
+    if args.case:
+        try:
+            k, p = map(int, args.case.split(':'))
+            if not (1 <= k <= 64 and 1 <= p <= 16):
+                raise ValueError
+            cases = [(k, p)]
+        except ValueError:
+            parser.error('--case must be K:P with 1<=K<=64 and 1<=P<=16 (testbench limits)')
+    if args.random_cycles < 0 or args.random_cycles > 1000000:
+        parser.error('--random-cycles must be between 0 and 1000000')
+    if args.seed is not None and not 1 <= args.seed <= 0xffffffff:
+        parser.error('--seed must be a nonzero unsigned 32-bit integer')
+    os.environ['PATH'] = str(ROOT / 'tools/mingw64/bin') + os.pathsep + os.environ['PATH']
+    compiler, runtime = shutil.which('iverilog'), shutil.which('vvp')
+    if not compiler or not runtime:
+        parser.error('Install Icarus Verilog; iverilog and vvp must be on PATH.')
+    report = ROOT / 'sim/results.txt'
+    report.parent.mkdir(exist_ok=True)
+    report.write_text('RTL regression report\n', encoding='utf-8')
+
+    def run(command, cwd):
+        try:
+            result = subprocess.run(command, cwd=cwd, text=True, capture_output=True, timeout=120)
+        except subprocess.TimeoutExpired as exc:
+            with report.open('a', encoding='utf-8') as out:
+                out.write(f'FAIL: timeout running {command[0]}\n')
+            raise SystemExit(str(exc))
+        text = result.stdout + result.stderr
+        print(text, end='')
+        with report.open('a', encoding='utf-8') as out:
+            out.write(text)
+            if result.returncode:
+                out.write(f'FAIL: process exit code {result.returncode}\n')
         if result.returncode:
-            raise SystemExit(result.stdout + result.stderr)
-        print(result.stdout + result.stderr,end='')
-        reports.append(result.stdout + result.stderr)
-(ROOT/'sim/results.txt').write_text(''.join(reports))
-print('All six configurations passed. Report: sim/results.txt')
+            raise SystemExit(result.returncode)
+
+    names = list(SUITES) if args.suite == 'all' else ([args.suite] if args.suite in SUITES else [])
+    passed = 0
+    for suite in names:
+        top, sources = SUITES[suite]
+        for k, p in cases:
+            case = ROOT / 'build' / suite / f'k{k}_p{p}'
+            case.mkdir(parents=True, exist_ok=True)
+            run([compiler, '-g2012', '-Wall', '-s', top,
+                 f'-P{top}.K={k}', f'-P{top}.P={p}', '-o', 'sim.vvp',
+                 *(str(ROOT / 'rtl' / name) for name in sources),
+                 str(ROOT / 'tests/rtl' / f'{top}.sv')], case)
+            command = [runtime, 'sim.vvp', f'+RANDOM_CYCLES={args.random_cycles}']
+            if args.seed is not None:
+                command.append(f'+SEED={args.seed}')
+            if args.vcd:
+                command.append('+VCD')
+            run(command, case)
+            passed += 1
+    if args.suite in ('all', 'legacy'):
+        # The legacy Python model intentionally has its own fixed six-case matrix.
+        run([sys.executable, str(ROOT / 'scripts/run_buffer_vectors.py')], ROOT)
+        passed += 6
+    summary = f'PASS: {passed} simulation cases completed; suite={args.suite}.\n'
+    print(summary, end='')
+    with report.open('a', encoding='utf-8') as out:
+        out.write(summary)
+    print(f'Report: {report}')
+
+
+if __name__ == '__main__':
+    main()

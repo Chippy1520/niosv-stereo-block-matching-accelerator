@@ -623,7 +623,7 @@ The enclosing module must supply `clk`, `rst_n`, and `clear_history`, and connec
 | Combine new column with previous ten | **Yes**, using their stored running total |
 | Compute eleven absolute differences for the new column | **Not in this module**; upstream stage |
 | Run 32 disparity calculations in parallel | **Not yet**; one lane's history |
-| Pipeline column adder trees | **Not yet** |
+| Pipeline column adder trees | **Now implemented** in [[Pipelined Column SAD Calculator]], outside this buffer |
 | Comparator tree carrying score and disparity index | **Not yet** |
 | Pipeline comparator tree | **Not yet** |
 | Accept image width and height | **Not here**; frontend/controller responsibility |
@@ -659,7 +659,7 @@ See [[Nios V Interface]].
 
 The module implements horizontal column reuse for a fixed-size, single-disparity lane, with an additional running-total optimization.
 
-Remaining stages are runtime configuration if required, upstream image/column processing, the parallel engine bank, and pipeline/comparator integration.
+The column calculator and one integrated lane are now implemented: see [[Pipelined Column SAD Calculator]], [[Single SAD Engine]] and [[Testbench Guide]]. Remaining stages include runtime configuration if required, image line buffers and alignment, the parallel engine bank, and comparator integration.
 
 ## Related notes
 

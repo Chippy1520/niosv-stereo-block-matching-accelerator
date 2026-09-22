@@ -1,0 +1,6 @@
+Command: python scripts/run_tests.py --suite engine --case 11:8 --seed 12345 --random-cycles 5000 --vcd
+RTL regression report
+VCD info: dumpfile waveform.vcd opened for output.
+PASS engine K=11 P=8 cycles=5538 outputs=2398
+tests\rtl\tb_sad_engine.sv:157: $finish called at 55386000 (1ps)
+PASS: 1 simulation cases completed; suite=engine.

@@ -1,0 +1,18 @@
+Command: python scripts/check_test_sensitivity.py
+Each mutant compiled; each was rejected by its scoreboard. Real RTL was not modified.
+
+early_valid
+FATAL: tests\rtl\tb_column_sad.sv:76: COLUMN K=11 P=8 cycle=5 got=(1,0) expected=(0,0)
+       Time: 66000  Scope: tb_column_sad.tick
+
+ignored_clear
+FATAL: tests\rtl\tb_column_sum_buffer.sv:59: BUFFER K=11 P=8 cycle=210 got=(0,616) expected=(0,0)
+       Time: 2116000  Scope: tb_column_sum_buffer.tick
+
+missing_pixel
+FATAL: tests\rtl\tb_column_sad.sv:76: COLUMN K=11 P=8 cycle=26 got=(1,2550) expected=(1,2805)
+       Time: 276000  Scope: tb_column_sad.tick
+
+miswired_engine_valid
+FATAL: tests\rtl\tb_sad_engine.sv:86: ENGINE K=11 P=8 cycle=13 got=(1,0) expected=(0,0)
+       Time: 146000  Scope: tb_sad_engine.tick

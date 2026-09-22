@@ -13,8 +13,9 @@ Completed project milestones are documented, verified, committed and pushed as p
 Every push or pull request triggers `.github/workflows/rtl-tests.yml`:
 1. Install Icarus Verilog on an Ubuntu runner.
 2. Check the walkthrough's embedded RTL matches the source.
-3. Run six independent-reference RTL simulation configurations.
-4. Upload simulation results as an artifact.
+3. Run 30 standalone/integrated simulation cases, including the preserved Python-reference buffer cases.
+4. Verify selected deliberately faulty RTL copies are rejected by the benches.
+5. Upload simulation results and test artifacts.
 
 ## What is not automatic
 
@@ -25,6 +26,7 @@ No unattended file watcher or scheduled job commits files. Manual edits are not 
 ```sh
 python scripts/check_walkthrough.py
 python scripts/run_tests.py
+python scripts/check_test_sensitivity.py
 git status --short
 git diff
 # Stage only the intended project files, then review:

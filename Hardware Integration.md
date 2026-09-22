@@ -7,6 +7,8 @@ Altera's current Nios V Developer Center explicitly lists Cyclone IV under its Q
 Source: https://www.altera.com/design/guidance/nios-v-developer
 Board manual: https://www.terasic.com.tw/attachment/archive/502/DE2_115_User_manual.pdf
 
-Future: add rtl/column_sum_buffer.sv as SystemVerilog to the existing Platform Designer/Quartus project and instantiate inside the accelerator. Board synthesis, timing constraints, CDC, CPU integration and programming are later milestones.
+A second component project, `Stereo_SAD_Engine.qpf`, now targets top-level `sad_engine` and includes all three RTL modules. Its Analysis & Synthesis passed with zero errors/warnings; see [[Verification]]. Existing buffer-project local settings were left untouched.
+
+Future: instantiate the engine inside the actual Platform Designer/Quartus board system, with an image frontend and control/data interfaces. Board synthesis, timing constraints, CDC, CPU integration and programming are later milestones.
 
 [[Nios V Interface]] · [[Timing and Pipelining]] · [[Home]]

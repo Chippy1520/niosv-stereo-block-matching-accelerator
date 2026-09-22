@@ -59,7 +59,9 @@ Thumbs.db
 /tools/.BUILDINFO
 /tools/.MTREE
 /tools/.PKGINFO
-/sim/results.txt
+/sim/*.txt
+*.vcd
+*.vvp
 .obsidian/workspace*.json
 .obsidian/cache/
 .obsidian/plugins/

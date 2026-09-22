@@ -1,0 +1,64 @@
+Command: python scripts/run_tests.py
+RTL regression report
+PASS column K=1 P=8 cycles=2040 outputs=1497
+tests\rtl\tb_column_sad.sv:121: $finish called at 20406000 (1ps)
+PASS column K=2 P=8 cycles=2062 outputs=1487
+tests\rtl\tb_column_sad.sv:121: $finish called at 20626000 (1ps)
+PASS column K=3 P=8 cycles=2087 outputs=1450
+tests\rtl\tb_column_sad.sv:121: $finish called at 20876000 (1ps)
+PASS column K=5 P=8 cycles=2121 outputs=1384
+tests\rtl\tb_column_sad.sv:121: $finish called at 21216000 (1ps)
+PASS column K=11 P=8 cycles=2182 outputs=1329
+tests\rtl\tb_column_sad.sv:121: $finish called at 21826000 (1ps)
+PASS column K=16 P=8 cycles=2212 outputs=1377
+tests\rtl\tb_column_sad.sv:121: $finish called at 22126000 (1ps)
+PASS column K=11 P=10 cycles=2182 outputs=1329
+tests\rtl\tb_column_sad.sv:121: $finish called at 21826000 (1ps)
+PASS column K=3 P=1 cycles=2087 outputs=1450
+tests\rtl\tb_column_sad.sv:121: $finish called at 20876000 (1ps)
+PASS buffer K=1 P=8 cycles=2070 outputs=1507
+tests\rtl\tb_column_sum_buffer.sv:97: $finish called at 20706000 (1ps)
+PASS buffer K=2 P=8 cycles=2101 outputs=1473
+tests\rtl\tb_column_sum_buffer.sv:97: $finish called at 21016000 (1ps)
+PASS buffer K=3 P=8 cycles=2135 outputs=1441
+tests\rtl\tb_column_sum_buffer.sv:97: $finish called at 21356000 (1ps)
+PASS buffer K=5 P=8 cycles=2211 outputs=1377
+tests\rtl\tb_column_sum_buffer.sv:97: $finish called at 22116000 (1ps)
+PASS buffer K=11 P=8 cycles=2512 outputs=1227
+tests\rtl\tb_column_sum_buffer.sv:97: $finish called at 25126000 (1ps)
+PASS buffer K=16 P=8 cycles=2845 outputs=1151
+tests\rtl\tb_column_sum_buffer.sv:97: $finish called at 28456000 (1ps)
+PASS buffer K=11 P=10 cycles=2512 outputs=1227
+tests\rtl\tb_column_sum_buffer.sv:97: $finish called at 25126000 (1ps)
+PASS buffer K=3 P=1 cycles=2135 outputs=1441
+tests\rtl\tb_column_sum_buffer.sv:97: $finish called at 21356000 (1ps)
+PASS engine K=1 P=8 cycles=2092 outputs=1480
+tests\rtl\tb_sad_engine.sv:157: $finish called at 20926000 (1ps)
+PASS engine K=2 P=8 cycles=2145 outputs=1429
+tests\rtl\tb_sad_engine.sv:157: $finish called at 21456000 (1ps)
+PASS engine K=3 P=8 cycles=2209 outputs=1344
+tests\rtl\tb_sad_engine.sv:157: $finish called at 22096000 (1ps)
+PASS engine K=5 P=8 cycles=2310 outputs=1255
+tests\rtl\tb_sad_engine.sv:157: $finish called at 23106000 (1ps)
+PASS engine K=11 P=8 cycles=2538 outputs=970
+tests\rtl\tb_sad_engine.sv:157: $finish called at 25386000 (1ps)
+PASS engine K=16 P=8 cycles=2678 outputs=972
+tests\rtl\tb_sad_engine.sv:157: $finish called at 26786000 (1ps)
+PASS engine K=11 P=10 cycles=2538 outputs=970
+tests\rtl\tb_sad_engine.sv:157: $finish called at 25386000 (1ps)
+PASS engine K=3 P=1 cycles=2209 outputs=1344
+tests\rtl\tb_sad_engine.sv:157: $finish called at 22096000 (1ps)
+PASS K=1 P=8 cycles=5036 valid_outputs=3745
+tb.sv:29: $finish called at 50366000 (1ps)
+PASS K=2 P=8 cycles=5047 valid_outputs=3642
+tb.sv:29: $finish called at 50476000 (1ps)
+PASS K=3 P=8 cycles=5058 valid_outputs=3503
+tb.sv:29: $finish called at 50586000 (1ps)
+PASS K=11 P=8 cycles=5146 valid_outputs=2601
+tb.sv:29: $finish called at 51466000 (1ps)
+PASS K=16 P=8 cycles=5201 valid_outputs=2371
+tb.sv:29: $finish called at 52016000 (1ps)
+PASS K=11 P=10 cycles=5146 valid_outputs=2746
+tb.sv:29: $finish called at 51466000 (1ps)
+All six configurations passed. Report: sim/legacy-buffer-results.txt
+PASS: 30 simulation cases completed; suite=all.

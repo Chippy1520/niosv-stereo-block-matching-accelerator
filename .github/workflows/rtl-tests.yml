@@ -18,14 +18,18 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y iverilog
       - name: Check embedded RTL documentation
         run: python scripts/check_walkthrough.py
-      - name: Compile and simulate all six configurations
+      - name: Compile and simulate standalone modules and integrated engine
         run: python scripts/run_tests.py
+      - name: Check testbench fault sensitivity
+        run: python scripts/check_test_sensitivity.py
       - name: Upload simulation results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: rtl-simulation-results
           path: |
-            sim/results.txt
-            build/k*/tb.sv
+            sim/*.txt
+            tests/rtl/*.sv
+            build/legacy-buffer/k*/tb.sv
+            build/mutation-checks/*/result.txt
           if-no-files-found: warn

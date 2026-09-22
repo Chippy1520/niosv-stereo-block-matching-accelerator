@@ -1,17 +1,35 @@
 # Verification
 #verified
-Real simulator: Icarus Verilog 13.0, local portable MSYS2 package in tools/mingw64. Quartus Prime Lite 22.1 Analysis & Synthesis also passed for `Stereo_SAD.qpf`: zero errors, one warning about unspecified parallel processor count. Report: `output_files/Stereo_SAD.map.rpt`. The history array maps to logic rather than block RAM due to asynchronous reads. No fitted timing or hardware test has been performed.
 
-Run from the project root:
+[[Testbench Guide]] · [[Single SAD Engine]] · [[Pipelined Column SAD Calculator]] · [[Column Sum Buffer]]
+
+## Current hierarchy of checks
+
+Three standalone self-checking SystemVerilog benches independently verify the calculator, the circular buffer, and the integrated engine. The original Python/deque buffer tests are also retained. See [[Testbench Guide]] for exact files, commands, scoreboards and coverage.
+
 ```sh
+python scripts/check_walkthrough.py
 python scripts/run_tests.py
+python scripts/check_test_sensitivity.py
 ```
 
-The Python runner generates stimulus and independently computes expected output using a length-K deque and full Python sums. Icarus compiles the actual SystemVerilog and vvp compares valid and output data every cycle, including held output on invalid cycles. Any mismatch exits nonzero.
+Default regression: **30 simulation cases**. Three SV suites run eight configurations each, plus six original Python-reference cases. SV cases include 2000 randomized cycles each after directed tests; Python-reference cases include 5000 each. All output cycles are checked, not just final checksums.
 
-Configurations tested: (K, pixel bits) = (1,8), (2,8), (3,8), (11,8), (16,8), (11,10).
-Directed checks: maximum/zero windows, warmup, pointer wrap, valid bubbles, clear with simultaneous valid, reset during traffic. Each configuration also receives 5000 deterministic randomized cycles.
+Local simulator: Icarus Verilog 13.0. GitHub Actions runs the same benches on Ubuntu using its packaged Icarus version. CI logs identify its installed version; the checks do not depend on matching the local version.
 
-Local generated simulator report: [results.txt](sim/results.txt). Committed milestone evidence: [column-buffer-simulation.txt](docs/verification/column-buffer-simulation.txt). Generated testbenches/vectors: build/. GitHub Actions uploads fresh results for each run.
+## Recorded evidence
 
-[[Column Sum Buffer]] · [[Interface Contract]] · [[Timing and Pipelining]]
+- Latest local generated report: [sim/results.txt](sim/results.txt).
+- Original buffer milestone: [column-buffer-simulation.txt](docs/verification/column-buffer-simulation.txt).
+- Engine/module milestone: [single-engine-simulation.txt](docs/verification/single-engine-simulation.txt).
+- Extra-seed engine/waveform run: [single-engine-extra-seed.txt](docs/verification/single-engine-extra-seed.txt).
+- Synthesis summary: [single-engine-synthesis.md](docs/verification/single-engine-synthesis.md).
+- GitHub Actions uploads fresh results and test artifacts for each run.
+
+## Synthesis versus timing
+
+Quartus Prime Lite 22.1 Analysis & Synthesis of `Stereo_SAD_Engine.qpf` passed with **zero errors and zero warnings**. Default K=11, PIXEL_W=8; post-synthesis report says **770 logic cells**, before fitting. This is not a final resource count or Fmax measurement.
+
+The original `Stereo_SAD.qpf` buffer-only project also previously passed (one processor-count warning). Its local settings have been preserved. The history array uses asynchronous reads and maps to logic rather than inferred block RAM. The multidimensional tree produces an informational netlist-writer bus-regrouping message, not a synthesis error.
+
+No fitting, fully constrained timing, board programming, CPU integration or physical image test has been claimed.

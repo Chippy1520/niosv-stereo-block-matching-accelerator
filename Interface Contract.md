@@ -1,5 +1,7 @@
 # Interface Contract
 #design
+This note describes the buffer-only interface. For packed pixel input and pipeline drain/flush behavior, see [[Single SAD Engine]] and [[Pipelined Column SAD Calculator]].
+
 [[Column Sum Buffer]] ports:
 
 | Port | Meaning |
