@@ -1,0 +1,31 @@
+name: RTL verification
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  simulate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Icarus Verilog
+        run: sudo apt-get update && sudo apt-get install -y iverilog
+      - name: Check embedded RTL documentation
+        run: python scripts/check_walkthrough.py
+      - name: Compile and simulate all six configurations
+        run: python scripts/run_tests.py
+      - name: Upload simulation results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rtl-simulation-results
+          path: |
+            sim/results.txt
+            build/k*/tb.sv
+          if-no-files-found: warn

@@ -1,0 +1,44 @@
+{
+  "collapse-filter": true,
+  "search": "",
+  "showTags": false,
+  "showAttachments": false,
+  "hideUnresolved": false,
+  "showOrphans": false,
+  "collapse-color-groups": true,
+  "colorGroups": [
+    {
+      "query": "tag:#implemented",
+      "color": {
+        "a": 1,
+        "rgb": 4250202
+      }
+    },
+    {
+      "query": "tag:#planned",
+      "color": {
+        "a": 1,
+        "rgb": 15374150
+      }
+    },
+    {
+      "query": "tag:#verified",
+      "color": {
+        "a": 1,
+        "rgb": 5080397
+      }
+    }
+  ],
+  "collapse-display": true,
+  "showArrow": false,
+  "textFadeMultiplier": 0,
+  "nodeSizeMultiplier": 1,
+  "lineSizeMultiplier": 1,
+  "collapse-forces": true,
+  "centerStrength": 0.518713248970312,
+  "repelStrength": 15,
+  "linkStrength": 1,
+  "linkDistance": 150,
+  "scale": 0.7972164032369928,
+  "close": false
+}

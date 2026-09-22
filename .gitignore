@@ -52,3 +52,19 @@ __pycache__/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Local simulation, tool installation, private backups and workspace state
+/build/
+/tools/mingw64/
+/tools/.BUILDINFO
+/tools/.MTREE
+/tools/.PKGINFO
+/sim/results.txt
+.obsidian/workspace*.json
+.obsidian/cache/
+.obsidian/plugins/
+.env
+.env.*
+!.env.example
+*.pem
+*.key

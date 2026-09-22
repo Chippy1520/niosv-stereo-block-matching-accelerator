@@ -1,0 +1,12 @@
+PASS K=1 P=8 cycles=5036 valid_outputs=3745
+tb.sv:29: $finish called at 50366000 (1ps)
+PASS K=2 P=8 cycles=5047 valid_outputs=3642
+tb.sv:29: $finish called at 50476000 (1ps)
+PASS K=3 P=8 cycles=5058 valid_outputs=3503
+tb.sv:29: $finish called at 50586000 (1ps)
+PASS K=11 P=8 cycles=5146 valid_outputs=2601
+tb.sv:29: $finish called at 51466000 (1ps)
+PASS K=16 P=8 cycles=5201 valid_outputs=2371
+tb.sv:29: $finish called at 52016000 (1ps)
+PASS K=11 P=10 cycles=5146 valid_outputs=2746
+tb.sv:29: $finish called at 51466000 (1ps)
