@@ -1,6 +1,16 @@
 # Progress log
 
-## Current milestone — pipelined calculator and single engine
+## Current milestone — circular row buffer
+
+- [x] Implement `rtl/circular_row_buffer.sv`: one raster image, a ring of K rows, registered vertical column.
+- [x] Keep disparity shift, pairing, border policy and engine drain outside this module.
+- [x] Add `tb_circular_row_buffer.sv`. The reference is a flat image, not a copy of the ring.
+- [x] Run eight `(K,P,W)` cases, including `K=1`, `IMG_W=1`, bubbles, clear-with-valid and random traffic.
+- [x] Add [[Module Blocks.canvas]] with ports, controls and interconnects. Orange blocks are not RTL.
+- [ ] Connect two instances through a disparity tap and row-drain controller. Not this milestone.
+- [x] Quartus smoke synthesis of `circular_row_buffer_synth` (`IMG_W=16`): 0 errors, 0 warnings, 3156 logic cells before fitting. The `IMG_W=640` default did not finish Analysis & Synthesis within 300 seconds.
+
+## Previous milestone — pipelined calculator and single engine
 
 - [x] Implement `rtl/column_sad.sv` with registered differences and balanced pipelined column reduction.
 - [x] Add tracked standalone `tb_column_sad.sv` and `tb_column_sum_buffer.sv`.
@@ -28,7 +38,7 @@ No image-stream line buffer, disparity shifter, multi-lane bank, fitted Fmax or 
 - [x] Add push/PR CI for simulation and embedded-source consistency.
 - [x] Implement upstream column absolute differences and adder tree (completed in engine milestone).
 - [x] Integrate one supplied-alignment SAD lane.
-- [ ] Implement image line buffers and disparity alignment.
+- [x] Implement the circular row-buffer abstraction (`rtl/circular_row_buffer.sv`). Disparity alignment is still open.
 - [ ] Integrate parallel lanes and winner-take-all tree.
 
 Evidence: [component simulation output](verification/column-buffer-simulation.txt), [test runner](../scripts/run_tests.py), [RTL](../rtl/column_sum_buffer.sv).

@@ -15,7 +15,8 @@ Assumption: grayscale pixels are 8-bit, image width 640 and height 480; confirm 
 - [x] Add a standalone SystemVerilog testbench for [[Column Sum Buffer]].
 - [x] Integrate [[Single SAD Engine]] and verify direct raw-pixel window results.
 - [x] Synthesize the engine (`Stereo_SAD_Engine.qpf`) with zero errors/warnings.
-- [ ] Implement [[Image Line Buffers]] and disparity alignment.
+- [x] Implement [[Circular Row Buffer]] — one image, K-row ring, vertical column out.
+- [ ] Disparity alignment, then connect the row buffers to [[Single SAD Engine]].
 - [ ] Integrate [[Disparity Bank]] and [[Minimum Comparator Tree]].
 - [ ] Integrate [[Nios V Interface]] and board system.
 
@@ -24,11 +25,11 @@ Assumption: grayscale pixels are 8-bit, image width 640 and height 480; confirm 
 
 [[Column Sum Buffer - Code Walkthrough|Code, line-by-line explanation, and examples]]
 
-[[Pipelined Column SAD Calculator]] · [[Single SAD Engine]] · [[Testbench Guide]]
+[[Pipelined Column SAD Calculator]] · [[Single SAD Engine]] · [[Circular Row Buffer]] · [[Testbench Guide]]
 
-[[Architecture.canvas]] · [[Rolling SAD Math]] · [[Interface Contract]] · [[Timing and Pipelining]] · [[Hardware Integration]]
+[[Architecture.canvas]] · [[Module Blocks.canvas|Module blocks]] · [[Rolling SAD Math]] · [[Interface Contract]] · [[Timing and Pipelining]] · [[Hardware Integration]]
 
 The vault root is also the source project root. Open graph using Ctrl+G.
 RTL: [column_sum_buffer.sv](rtl/column_sum_buffer.sv)
 Test runner: [run_tests.py](scripts/run_tests.py)
-No community plugins required. The calculator, buffer and single engine are implemented and independently tested. See [[Testbench Guide]]; multi-lane search and board integration remain planned.
+No community plugins required. The row buffer, calculator, history buffer and single engine are implemented and independently tested. Open [[Module Blocks.canvas]] for ports and interconnects. Disparity alignment and the multi-lane bank remain planned.

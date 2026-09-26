@@ -1,7 +1,9 @@
 # Image Line Buffers
 #planned
-Future module, not implemented.
-Provide K vertically aligned pixels per image column. Requires previous image rows, appropriate read bandwidth, window warmup and border handling. Raw images cannot be connected directly to [[Column Sum Buffer]].
 
-Flow: [[Nios V Interface]] → image ingress/line storage → [[Column SAD Engines]].
-For now assume rectified images; calibration/rectification is upstream. Define padding versus valid-only windows before building this stage.
+The first piece is implemented as [[Circular Row Buffer]]: one image stream, a ring of K rows, and one vertical column out.
+
+Still not implemented: a second instance wired to the engine, disparity shift, border policy, and the controller that drains [[Single SAD Engine]] after `row_last_o`. See [[Module Blocks.canvas]] for that split.
+
+Flow: [[Nios V Interface]] → [[Circular Row Buffer]] → disparity tap (planned) → [[Column SAD Engines]].
+For now assume rectified images; calibration/rectification is upstream.

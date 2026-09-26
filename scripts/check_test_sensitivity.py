@@ -24,6 +24,10 @@ faults = [
      'tb_column_sum_buffer', ['column_sum_buffer.sv'], 'BUFFER'),
     ('miswired_engine_valid', 'sad_engine.sv', '.valid_i(column_valid)', '.valid_i(valid_i)',
      'tb_sad_engine', ['column_sad.sv', 'column_sum_buffer.sv', 'sad_engine.sv'], 'ENGINE'),
+    ('shifted_row_tap', 'circular_row_buffer.sv',
+     "tap_sum - (SLOT_W + 1)'(K) : tap_sum",
+     "tap_sum - (SLOT_W + 1)'(K - 1) : tap_sum",
+     'tb_circular_row_buffer', ['circular_row_buffer.sv'], 'ROW'),
 ]
 for name, changed_file, old, new, top, source_names, marker in faults:
     work = ROOT / 'build/mutation-checks' / name

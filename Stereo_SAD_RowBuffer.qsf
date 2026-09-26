@@ -1,0 +1,11 @@
+# Row-buffer component synthesis. Not a board pin assignment.
+# Top is the IMG_W=16 smoke wrapper. The IMG_W=640 default did not finish
+# Analysis & Synthesis within 300 seconds with combinational column readout.
+set_global_assignment -name FAMILY "Cyclone IV E"
+set_global_assignment -name DEVICE EP4CE115F29C7
+set_global_assignment -name TOP_LEVEL_ENTITY circular_row_buffer_synth
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY build/quartus-row
+set_global_assignment -name NUM_PARALLEL_PROCESSORS 4
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/circular_row_buffer.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/circular_row_buffer_synth.sv
+set_global_assignment -name SDC_FILE constraints/column_sum_buffer.sdc

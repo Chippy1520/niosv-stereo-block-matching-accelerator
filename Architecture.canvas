@@ -1,275 +1,42 @@
 {
-  "nodes": [
-    {
-      "id": "n0",
-      "type": "file",
-      "file": "Nios V Interface.md",
-      "x": 0,
-      "y": 0,
-      "width": 350,
-      "height": 340,
-      "color": "2"
-    },
-    {
-      "id": "n1",
-      "type": "file",
-      "file": "Image Line Buffers.md",
-      "x": 400,
-      "y": 0,
-      "width": 350,
-      "height": 340,
-      "color": "2"
-    },
-    {
-      "id": "n2",
-      "type": "file",
-      "file": "Column SAD Engines.md",
-      "x": 800,
-      "y": 0,
-      "width": 350,
-      "height": 340,
-      "color": "4"
-    },
-    {
-      "id": "n3",
-      "type": "file",
-      "file": "Column Sum Buffer.md",
-      "x": 1200,
-      "y": 0,
-      "width": 350,
-      "height": 340,
-      "color": "4"
-    },
-    {
-      "id": "n4",
-      "type": "file",
-      "file": "Disparity Bank.md",
-      "x": 1600,
-      "y": 0,
-      "width": 350,
-      "height": 340,
-      "color": "2"
-    },
-    {
-      "id": "n5",
-      "type": "file",
-      "file": "Minimum Comparator Tree.md",
-      "x": 2000,
-      "y": 0,
-      "width": 350,
-      "height": 340,
-      "color": "2"
-    },
-    {
-      "id": "n6",
-      "type": "file",
-      "file": "Rolling SAD Math.md",
-      "x": 0,
-      "y": 430,
-      "width": 350,
-      "height": 340,
-      "color": "5"
-    },
-    {
-      "id": "n7",
-      "type": "file",
-      "file": "Interface Contract.md",
-      "x": 400,
-      "y": 430,
-      "width": 350,
-      "height": 340,
-      "color": "5"
-    },
-    {
-      "id": "n8",
-      "type": "file",
-      "file": "Verification.md",
-      "x": 800,
-      "y": 430,
-      "width": 350,
-      "height": 340,
-      "color": "5"
-    },
-    {
-      "id": "n9",
-      "type": "file",
-      "file": "Timing and Pipelining.md",
-      "x": 1200,
-      "y": 430,
-      "width": 350,
-      "height": 340,
-      "color": "5"
-    },
-    {
-      "id": "n10",
-      "type": "file",
-      "file": "Hardware Integration.md",
-      "x": 1600,
-      "y": 430,
-      "width": 350,
-      "height": 340,
-      "color": "5"
-    },
-    {
-      "id": "n11",
-      "type": "file",
-      "file": "Home.md",
-      "x": 2000,
-      "y": 430,
-      "width": 350,
-      "height": 340,
-      "color": "5"
-    },
-    {
-      "id": "column-calculator",
-      "type": "file",
-      "file": "Pipelined Column SAD Calculator.md",
-      "x": 800,
-      "y": 900,
-      "width": 350,
-      "height": 340,
-      "color": "4"
-    },
-    {
-      "id": "single-engine",
-      "type": "file",
-      "file": "Single SAD Engine.md",
-      "x": 1200,
-      "y": 900,
-      "width": 350,
-      "height": 340,
-      "color": "4"
-    },
-    {
-      "id": "testbenches",
-      "type": "file",
-      "file": "Testbench Guide.md",
-      "x": 1600,
-      "y": 900,
-      "width": 350,
-      "height": 340,
-      "color": "5"
-    }
-  ],
-  "edges": [
-    {
-      "id": "e0",
-      "fromNode": "n0",
-      "fromSide": "right",
-      "toNode": "n1",
-      "toSide": "left"
-    },
-    {
-      "id": "e1",
-      "fromNode": "n1",
-      "fromSide": "right",
-      "toNode": "n2",
-      "toSide": "left"
-    },
-    {
-      "id": "e2",
-      "fromNode": "n2",
-      "fromSide": "right",
-      "toNode": "n3",
-      "toSide": "left"
-    },
-    {
-      "id": "e3",
-      "fromNode": "n3",
-      "fromSide": "right",
-      "toNode": "n4",
-      "toSide": "left"
-    },
-    {
-      "id": "e4",
-      "fromNode": "n4",
-      "fromSide": "right",
-      "toNode": "n5",
-      "toSide": "left"
-    },
-    {
-      "id": "e5",
-      "fromNode": "n6",
-      "fromSide": "right",
-      "toNode": "n3",
-      "toSide": "left"
-    },
-    {
-      "id": "e6",
-      "fromNode": "n7",
-      "fromSide": "right",
-      "toNode": "n3",
-      "toSide": "left"
-    },
-    {
-      "id": "e7",
-      "fromNode": "n3",
-      "fromSide": "right",
-      "toNode": "n8",
-      "toSide": "left"
-    },
-    {
-      "id": "e8",
-      "fromNode": "n9",
-      "fromSide": "right",
-      "toNode": "n2",
-      "toSide": "left"
-    },
-    {
-      "id": "e9",
-      "fromNode": "n9",
-      "fromSide": "right",
-      "toNode": "n5",
-      "toSide": "left"
-    },
-    {
-      "id": "e10",
-      "fromNode": "n10",
-      "fromSide": "right",
-      "toNode": "n0",
-      "toSide": "left"
-    },
-    {
-      "id": "e11",
-      "fromNode": "n11",
-      "fromSide": "right",
-      "toNode": "n6",
-      "toSide": "left"
-    },
-    {
-      "id": "col-detail",
-      "fromNode": "n2",
-      "fromSide": "right",
-      "toNode": "column-calculator",
-      "toSide": "left"
-    },
-    {
-      "id": "engine-col",
-      "fromNode": "column-calculator",
-      "fromSide": "right",
-      "toNode": "single-engine",
-      "toSide": "left"
-    },
-    {
-      "id": "engine-buffer",
-      "fromNode": "n3",
-      "fromSide": "right",
-      "toNode": "single-engine",
-      "toSide": "left"
-    },
-    {
-      "id": "engine-tests",
-      "fromNode": "single-engine",
-      "fromSide": "right",
-      "toNode": "testbenches",
-      "toSide": "left"
-    },
-    {
-      "id": "tests-verification",
-      "fromNode": "testbenches",
-      "fromSide": "right",
-      "toNode": "n8",
-      "toSide": "left"
-    }
-  ]
+	"nodes":[
+		{"id":"n0","type":"file","file":"Nios V Interface.md","x":0,"y":0,"width":350,"height":340,"color":"2"},
+		{"id":"n1","type":"file","file":"Image Line Buffers.md","x":400,"y":0,"width":350,"height":340,"color":"2"},
+		{"id":"n2","type":"file","file":"Column SAD Engines.md","x":800,"y":0,"width":350,"height":340,"color":"4"},
+		{"id":"n3","type":"file","file":"Column Sum Buffer.md","x":1200,"y":0,"width":350,"height":340,"color":"4"},
+		{"id":"n4","type":"file","file":"Disparity Bank.md","x":1600,"y":0,"width":350,"height":340,"color":"2"},
+		{"id":"n5","type":"file","file":"Minimum Comparator Tree.md","x":2000,"y":0,"width":350,"height":340,"color":"2"},
+		{"id":"n6","type":"file","file":"Rolling SAD Math.md","x":0,"y":430,"width":350,"height":340,"color":"5"},
+		{"id":"n7","type":"file","file":"Interface Contract.md","x":400,"y":430,"width":350,"height":340,"color":"5"},
+		{"id":"n8","type":"file","file":"Verification.md","x":800,"y":430,"width":350,"height":340,"color":"5"},
+		{"id":"n9","type":"file","file":"Timing and Pipelining.md","x":1200,"y":430,"width":350,"height":340,"color":"5"},
+		{"id":"n10","type":"file","file":"Hardware Integration.md","x":1600,"y":430,"width":350,"height":340,"color":"5"},
+		{"id":"n11","type":"file","file":"Home.md","x":2000,"y":430,"width":350,"height":340,"color":"5"},
+		{"id":"column-calculator","type":"file","file":"Pipelined Column SAD Calculator.md","x":800,"y":900,"width":350,"height":340,"color":"4"},
+		{"id":"single-engine","type":"file","file":"Single SAD Engine.md","x":1200,"y":900,"width":350,"height":340,"color":"4"},
+		{"id":"testbenches","type":"file","file":"Testbench Guide.md","x":1600,"y":900,"width":350,"height":340,"color":"5"},
+		{"id":"row-buffer","type":"file","file":"Circular Row Buffer.md","x":400,"y":900,"width":350,"height":220,"color":"4"},
+		{"id":"module-blocks","type":"file","file":"Module Blocks.canvas","x":0,"y":900,"width":350,"height":180,"color":"5"}
+	],
+	"edges":[
+		{"id":"e0","fromNode":"n0","fromSide":"right","toNode":"n1","toSide":"left"},
+		{"id":"e1","fromNode":"n1","fromSide":"right","toNode":"n2","toSide":"left"},
+		{"id":"e2","fromNode":"n2","fromSide":"right","toNode":"n3","toSide":"left"},
+		{"id":"e3","fromNode":"n3","fromSide":"right","toNode":"n4","toSide":"left"},
+		{"id":"e4","fromNode":"n4","fromSide":"right","toNode":"n5","toSide":"left"},
+		{"id":"e5","fromNode":"n6","fromSide":"right","toNode":"n3","toSide":"left"},
+		{"id":"e6","fromNode":"n7","fromSide":"right","toNode":"n3","toSide":"left"},
+		{"id":"e7","fromNode":"n3","fromSide":"right","toNode":"n8","toSide":"left"},
+		{"id":"e8","fromNode":"n9","fromSide":"right","toNode":"n2","toSide":"left"},
+		{"id":"e9","fromNode":"n9","fromSide":"right","toNode":"n5","toSide":"left"},
+		{"id":"e10","fromNode":"n10","fromSide":"right","toNode":"n0","toSide":"left"},
+		{"id":"e11","fromNode":"n11","fromSide":"right","toNode":"n6","toSide":"left"},
+		{"id":"col-detail","fromNode":"n2","fromSide":"right","toNode":"column-calculator","toSide":"left"},
+		{"id":"engine-col","fromNode":"column-calculator","fromSide":"right","toNode":"single-engine","toSide":"left"},
+		{"id":"engine-buffer","fromNode":"n3","fromSide":"right","toNode":"single-engine","toSide":"left"},
+		{"id":"engine-tests","fromNode":"single-engine","fromSide":"right","toNode":"testbenches","toSide":"left"},
+		{"id":"tests-verification","fromNode":"testbenches","fromSide":"right","toNode":"n8","toSide":"left"},
+		{"id":"line-to-row","fromNode":"n1","fromSide":"bottom","toNode":"row-buffer","toSide":"top"},
+		{"id":"row-to-blocks","fromNode":"module-blocks","fromSide":"right","toNode":"row-buffer","toSide":"left"}
+	]
 }

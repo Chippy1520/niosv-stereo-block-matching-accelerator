@@ -1,7 +1,7 @@
 # Testbench Guide
 #verified
 
-[[Home]] · [[Pipelined Column SAD Calculator]] · [[Column Sum Buffer]] · [[Single SAD Engine]] · [[Verification]]
+[[Home]] · [[Pipelined Column SAD Calculator]] · [[Column Sum Buffer]] · [[Single SAD Engine]] · [[Circular Row Buffer]] · [[Verification]]
 
 ## Module → standalone test → integration → overall test
 
@@ -9,6 +9,7 @@ Each implemented module has its own tracked SystemVerilog testbench:
 
 | Unit | RTL | Testbench | Independent reference |
 |---|---|---|---|
+| Circular row buffer | rtl/circular_row_buffer.sv | tests/rtl/tb_circular_row_buffer.sv | Flat image; rebuild each vertical column from original pixels |
 | Column calculator | rtl/column_sad.sv | tests/rtl/tb_column_sad.sv | Serial sum of K unsigned absolute differences |
 | Circular buffer | rtl/column_sum_buffer.sv | tests/rtl/tb_column_sum_buffer.sv | Shift K reference columns and recompute their complete sum |
 | Single engine | rtl/sad_engine.sv | tests/rtl/tb_sad_engine.sv | Retain raw pixel columns and recompute the full K×K pixel SAD |
@@ -22,18 +23,21 @@ The original Python/deque buffer regression is preserved separately in `scripts/
 From the repository root:
 
 ```sh
-python scripts/run_tests.py                         # all suites, 30 cases
+python scripts/run_tests.py                         # all suites, 38 cases
 python scripts/run_tests.py --suite column          # calculator alone
-python scripts/run_tests.py --suite buffer          # buffer alone
+python scripts/run_tests.py --suite buffer          # column-history buffer alone
+python scripts/run_tests.py --suite row             # circular row buffer alone
 python scripts/run_tests.py --suite engine          # integrated lane
 python scripts/run_tests.py --suite legacy          # original Python/deque cases
 python scripts/check_walkthrough.py                 # all embedded RTL snapshots
 python scripts/check_test_sensitivity.py            # deliberately wrong RTL must fail
 ```
 
-Standalone suite matrix: `(K,P) = (1,8), (2,8), (3,8), (5,8), (11,8), (16,8), (11,10), (3,1)`.
+Calculator, column-history and engine suites use `(K,P) = (1,8), (2,8), (3,8), (5,8), (11,8), (16,8), (11,10), (3,1)`.
 
-Three suites × eight configurations plus six legacy buffer configurations = 30 cases. Standalone benches run directed cases plus 2000 pseudorandom input cycles by default; legacy cases retain 5000 random cycles each. Random generators are deterministic xorshift32; each bench has its own default seed. Use a nonzero `--seed` to reproduce another run.
+The row suite uses its own widths: `(K,P,W) = (1,8,1), (2,8,3), (3,8,4), (5,8,2), (11,8,8), (16,8,5), (11,10,7), (3,1,6)`. Default module width remains 640; simulation does not stream a full 640×480 frame.
+
+Three parameter suites × eight configurations, plus eight row-width configurations, plus six legacy buffer configurations = 38 cases. Standalone benches run directed cases plus 2000 pseudorandom input cycles by default; legacy cases retain 5000 random cycles each. Random generators are deterministic xorshift32; each bench has its own default seed. Use a nonzero `--seed` to reproduce another run. `--case K:P:W` sets the row-buffer width; other suites ignore W.
 
 ## Waveforms
 

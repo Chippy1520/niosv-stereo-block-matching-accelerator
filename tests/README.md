@@ -2,9 +2,10 @@
 
 ## Implemented standalone benches
 
-- `rtl/tb_column_sad.sv`: serial absolute-difference reference plus exact pipeline scoreboard.
-- `rtl/tb_column_sum_buffer.sv`: independent full-window resummation, warmup, wrapping, clear and stalls.
-- `rtl/tb_sad_engine.sv`: full raw-pixel window reference and row-boundary checks.
+- `tests/rtl/tb_circular_row_buffer.sv`: flat-image column reference, warmup, ring wrap, `row_last_o`, clear and stalls.
+- `tests/rtl/tb_column_sad.sv`: serial absolute-difference reference plus exact pipeline scoreboard.
+- `tests/rtl/tb_column_sum_buffer.sv`: independent full-window resummation, warmup, wrapping, clear and stalls.
+- `tests/rtl/tb_sad_engine.sv`: full raw-pixel window reference and row-boundary checks.
 
 Run from the repository root:
 
@@ -12,6 +13,7 @@ Run from the repository root:
 python scripts/run_tests.py
 python scripts/run_tests.py --suite column
 python scripts/run_tests.py --suite buffer
+python scripts/run_tests.py --suite row --case 11:8:8 --vcd
 python scripts/run_tests.py --suite engine --case 11:8 --vcd
 python scripts/check_test_sensitivity.py
 ```

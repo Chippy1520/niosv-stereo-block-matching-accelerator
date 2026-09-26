@@ -659,7 +659,7 @@ See [[Nios V Interface]].
 
 The module implements horizontal column reuse for a fixed-size, single-disparity lane, with an additional running-total optimization.
 
-The column calculator and one integrated lane are now implemented: see [[Pipelined Column SAD Calculator]], [[Single SAD Engine]] and [[Testbench Guide]]. Remaining stages include runtime configuration if required, image line buffers and alignment, the parallel engine bank, and comparator integration.
+The column calculator, one integrated lane and the [[Circular Row Buffer]] abstraction are now implemented. See [[Pipelined Column SAD Calculator]], [[Single SAD Engine]], [[Module Blocks.canvas]] and [[Testbench Guide]]. Remaining stages include disparity alignment, the parallel engine bank, and comparator integration.
 
 ## Related notes
 

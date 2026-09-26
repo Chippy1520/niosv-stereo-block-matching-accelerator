@@ -1,0 +1,220 @@
+{
+  "nodes": [
+    {
+      "id": "legend",
+      "type": "text",
+      "text": "## How to read this canvas\nGreen = implemented module. Orange = abstract block, not RTL yet.\nArrow labels are the interconnect. Controls are drawn once and fan out.\n\nOpen [[Circular Row Buffer]] for the new source. This canvas is the port picture; [[Architecture.canvas]] remains the note map.",
+      "x": 0,
+      "y": -300,
+      "width": 760,
+      "height": 220,
+      "color": "5"
+    },
+    {
+      "id": "controls",
+      "type": "text",
+      "text": "## controls\nshared by every implemented block\n\n- clk\n- rst_n — sync, active low\n- clear_i — wins over valid_i\n\nNo ready/backpressure.\nDownstream must take every valid output.",
+      "x": 0,
+      "y": 0,
+      "width": 340,
+      "height": 300,
+      "color": "6"
+    },
+    {
+      "id": "rowL",
+      "type": "text",
+      "text": "## circular_row_buffer\ninstance: left image\n\n**in**\n- valid_i\n- pixel_i[PIXEL_W]\n\n**out**\n- valid_o\n- column_o[K*PIXEL_W]\n- row_last_o\n\nRing of K rows.\nOldest pixel = low slice.\nOne pixel per accept.",
+      "x": 440,
+      "y": 0,
+      "width": 360,
+      "height": 380,
+      "color": "4"
+    },
+    {
+      "id": "rowR",
+      "type": "text",
+      "text": "## circular_row_buffer\ninstance: right image\n\nSame module, second instance.\n\n**in**\n- valid_i\n- pixel_i[PIXEL_W]\n\n**out**\n- valid_o\n- column_o[K*PIXEL_W]\n- row_last_o\n\nNo disparity shift inside.",
+      "x": 440,
+      "y": 480,
+      "width": 360,
+      "height": 380,
+      "color": "4"
+    },
+    {
+      "id": "controller",
+      "type": "text",
+      "text": "## row controller\nnot a module yet\n\n**in**\n- row_last_o from each buffer\n\n**out**\n- stall the next window-row\n- engine clear_i after drain\n\nDrain is ceil(log2(K))+1 edges, then clear on its own edge.",
+      "x": 900,
+      "y": 0,
+      "width": 360,
+      "height": 340,
+      "color": "2"
+    },
+    {
+      "id": "align",
+      "type": "text",
+      "text": "## disparity tap\nnot a module yet\n\n**in**\n- right column_o\n- disparity index\n\n**out**\n- right column at x-d\n\nKept outside the row buffer so the ring stays a plain image abstraction.",
+      "x": 900,
+      "y": 480,
+      "width": 360,
+      "height": 340,
+      "color": "2"
+    },
+    {
+      "id": "engine",
+      "type": "text",
+      "text": "## sad_engine\nimplemented wrapper\n\n**in**\n- valid_i\n- left_column_i[K*PIXEL_W]\n- right_column_i[K*PIXEL_W]\n\n**out**\n- valid_o\n- sad_o[SAD_W]\n\nFixed alignment only.\nNo image memory inside.",
+      "x": 1360,
+      "y": 200,
+      "width": 360,
+      "height": 380,
+      "color": "4"
+    },
+    {
+      "id": "colsad",
+      "type": "text",
+      "text": "## column_sad\ninside sad_engine\n\n**in**\n- valid_i\n- left_column_i\n- right_column_i\n\n**out**\n- valid_o\n- column_sum_o[COL_W]\n\nAbs differences, then a registered adder tree.\nLatency: ceil(log2(K)) after the sampling edge.",
+      "x": 1820,
+      "y": 40,
+      "width": 380,
+      "height": 400,
+      "color": "4"
+    },
+    {
+      "id": "colbuf",
+      "type": "text",
+      "text": "## column_sum_buffer\ninside sad_engine\n\n**in**\n- valid_i\n- column_sum_i[COL_W]\n\n**out**\n- valid_o\n- sad_o[SAD_W]\n\nRing of K-1 column sums.\nFinal adder is H + new column.\nAlready inside this block.",
+      "x": 2300,
+      "y": 40,
+      "width": 380,
+      "height": 400,
+      "color": "4"
+    },
+    {
+      "id": "winner",
+      "type": "text",
+      "text": "## minimum comparator\nnot a module yet\n\n**in**\n- 32 sad_o values\n- their disparity indexes\n\n**out**\n- best disparity\n- best cost\n\nOne engine exists today. The bank is still one lane.",
+      "x": 2300,
+      "y": 520,
+      "width": 380,
+      "height": 320,
+      "color": "2"
+    },
+    {
+      "id": "note",
+      "type": "file",
+      "file": "Circular Row Buffer.md",
+      "x": 440,
+      "y": 940,
+      "width": 360,
+      "height": 140,
+      "color": "4"
+    }
+  ],
+  "edges": [
+    {
+      "id": "c-rowL",
+      "fromNode": "controls",
+      "fromSide": "right",
+      "toNode": "rowL",
+      "toSide": "left",
+      "label": "clk, rst_n, clear_i"
+    },
+    {
+      "id": "c-rowR",
+      "fromNode": "controls",
+      "fromSide": "right",
+      "toNode": "rowR",
+      "toSide": "left",
+      "label": "clk, rst_n, clear_i"
+    },
+    {
+      "id": "c-eng",
+      "fromNode": "controls",
+      "fromSide": "bottom",
+      "toNode": "engine",
+      "toSide": "left",
+      "label": "clk, rst_n, clear_i"
+    },
+    {
+      "id": "rowL-eng",
+      "fromNode": "rowL",
+      "fromSide": "right",
+      "toNode": "engine",
+      "toSide": "left",
+      "label": "left column, valid"
+    },
+    {
+      "id": "rowL-ctl",
+      "fromNode": "rowL",
+      "fromSide": "top",
+      "toNode": "controller",
+      "toSide": "left",
+      "label": "row_last_o"
+    },
+    {
+      "id": "rowR-align",
+      "fromNode": "rowR",
+      "fromSide": "right",
+      "toNode": "align",
+      "toSide": "left",
+      "label": "right column, valid"
+    },
+    {
+      "id": "rowR-ctl",
+      "fromNode": "rowR",
+      "fromSide": "top",
+      "toNode": "controller",
+      "toSide": "bottom",
+      "label": "row_last_o"
+    },
+    {
+      "id": "align-eng",
+      "fromNode": "align",
+      "fromSide": "right",
+      "toNode": "engine",
+      "toSide": "bottom",
+      "label": "aligned right column"
+    },
+    {
+      "id": "ctl-eng",
+      "fromNode": "controller",
+      "fromSide": "right",
+      "toNode": "engine",
+      "toSide": "top",
+      "label": "drain, then clear"
+    },
+    {
+      "id": "eng-sad",
+      "fromNode": "engine",
+      "fromSide": "right",
+      "toNode": "colsad",
+      "toSide": "left",
+      "label": "pixel columns"
+    },
+    {
+      "id": "sad-buf",
+      "fromNode": "colsad",
+      "fromSide": "right",
+      "toNode": "colbuf",
+      "toSide": "left",
+      "label": "column_sum, valid"
+    },
+    {
+      "id": "buf-out",
+      "fromNode": "colbuf",
+      "fromSide": "bottom",
+      "toNode": "winner",
+      "toSide": "top",
+      "label": "sad_o, valid_o"
+    },
+    {
+      "id": "row-note",
+      "fromNode": "rowL",
+      "fromSide": "bottom",
+      "toNode": "note",
+      "toSide": "top",
+      "label": "source"
+    }
+  ]
+}
