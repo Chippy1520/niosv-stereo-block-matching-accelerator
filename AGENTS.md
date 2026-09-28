@@ -3,7 +3,8 @@
 ## Scope and authoritative artifacts
 - SystemVerilog stereo SAD accelerator on DE2-115. Implement one verified stage at a time.
 - Root is both the source project and Obsidian vault. Preserve meaningful links and existing planning reports.
-- `rtl/*.sv` files are the source of truth; calculator, buffer and engine notes embed exact snapshots.
+- `rtl/*.sv` files are the source of truth; every new functional HDL module must be delivered in the same milestone with (1) one Obsidian code walkthrough whose first SystemVerilog block embeds the exact full RTL and explains the design line beside its code, and (2) a standalone self-checking `tests/rtl/tb_<module>.sv` registered in `scripts/run_tests.py`. Add the mapping to `scripts/check_walkthrough.py`; its CI coverage check rejects unregistered RTL. The fixed-width synthesis smoke top is the documented exception, not a new functional datapath.
+- Keep the vault's system → accelerator → frontend/engine → module hierarchy and its hub-note links intact; folders alone do not create Obsidian Graph edges.
 - Verify each module standalone before its integration bench. Keep independent reference models; the engine scoreboard recomputes full raw-pixel windows.
 - Quartus Lite 22.1 in this environment requires separately declared genvars; inline `for (genvar ...)` failed parsing.
 - Preserve the input/flush timing contract: normal row end drains ceil(log2(K))+1 edges, then clears on a separate edge.

@@ -3,7 +3,7 @@
 
 [[Home]] · [[Module Blocks.canvas|System blocks]] · [[Accelerator Blocks.canvas|Accelerator blocks]] · [[Stereo Frontend Blocks.canvas|Frontend drill-down]] · [[Image Line Buffers]] · [[Single SAD Engine]] · [[Testbench Guide]]
 
-Source: [rtl/circular_row_buffer.sv](rtl/circular_row_buffer.sv). Bench: [tb_circular_row_buffer.sv](tests/rtl/tb_circular_row_buffer.sv).
+Source: [rtl/circular_row_buffer.sv](../../rtl/circular_row_buffer.sv). Bench: [tb_circular_row_buffer.sv](../../tests/rtl/tb_circular_row_buffer.sv).
 
 ## First, the story — no RTL yet
 
@@ -127,7 +127,7 @@ endmodule
 
 ## Code walkthrough — the row ring, with RTL beside each explanation
 
-Line numbers below refer to [rtl/circular_row_buffer.sv](rtl/circular_row_buffer.sv). This **one-image** pixel-row ring is distinct from the engine's circular *column-cost* history.
+Line numbers below refer to [rtl/circular_row_buffer.sv](../../rtl/circular_row_buffer.sv). This **one-image** pixel-row ring is distinct from the engine's circular *column-cost* history.
 
 ### 1. Interface: what the clerk receives and emits (lines 1–25)
 

@@ -3,7 +3,7 @@
 
 [[Home]] · [[Single SAD Engine]] · [[Column Sum Buffer]] · [[Testbench Guide]]
 
-Source: [rtl/column_sad.sv](rtl/column_sad.sv). Standalone bench: [tb_column_sad.sv](tests/rtl/tb_column_sad.sv).
+Source: [rtl/column_sad.sv](../../rtl/column_sad.sv). Standalone bench: [tb_column_sad.sv](../../tests/rtl/tb_column_sad.sv).
 
 ## First, the story — no RTL yet
 
@@ -109,7 +109,7 @@ endmodule
 
 ## Code walkthrough — actual RTL, explained beside the lines
 
-The complete [source snapshot](rtl/column_sad.sv) above is checked against `rtl/column_sad.sv`. The numbers below are **source-file line numbers**, not Markdown line numbers. Every `generate` loop expands to parallel hardware at elaboration; it does not run once per clock.
+The complete [source snapshot](../../rtl/column_sad.sv) above is checked against `rtl/column_sad.sv`. The numbers below are **source-file line numbers**, not Markdown line numbers. Every `generate` loop expands to parallel hardware at elaboration; it does not run once per clock.
 
 ### 1. File setup and the module contract (lines 1–22)
 

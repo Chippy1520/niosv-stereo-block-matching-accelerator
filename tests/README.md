@@ -18,7 +18,7 @@ python scripts/run_tests.py --suite engine --case 11:8 --vcd
 python scripts/check_test_sensitivity.py
 ```
 
-See [Testbench Guide](../Testbench%20Guide.md) for compilation commands, parameters, timing, reference independence, and optional waveforms. All three benches are tracked files, not just generated snippets. `scripts/run_buffer_vectors.py` preserves the earlier independent Python/deque regression.
+See [Testbench Guide](../Verification/Testbench%20Guide.md) for compilation commands, parameters, timing, reference independence, and optional waveforms. All four benches are tracked files, not just generated snippets. `scripts/run_buffer_vectors.py` preserves the earlier independent Python/deque regression. Every new functional RTL module needs its own walkthrough and standalone self-checking bench in the same milestone; `scripts/check_walkthrough.py` checks source, note, bench and runner registration.
 
 ## Future system-level tests (not covered by the current lane)
 

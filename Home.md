@@ -23,6 +23,8 @@ Assumption: grayscale pixels are 8-bit, image width 640 and height 480; confirm 
 ## Navigate
 [GitHub repository](https://github.com/Chippy1520/niosv-stereo-block-matching-accelerator) · [[docs/github-workflow|Update workflow]]
 
+**Graph spine:** [[System Architecture]] → [[Accelerator Architecture]] → [[Stereo Frontend]] / [[SAD Engine Architecture]] → [[Verification Map]]. These links create the hierarchy in Obsidian Graph; folders alone do not.
+
 [[Column Sum Buffer - Code Walkthrough|Code, line-by-line explanation, and examples]]
 
 [[Pipelined Column SAD Calculator]] · [[Single SAD Engine]] · [[Circular Row Buffer]] · [[Testbench Guide]]

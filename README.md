@@ -21,18 +21,18 @@ SystemVerilog stereo SAD accelerator under incremental development for the **Ter
 ## Start here
 
 - [Project dashboard](Home.md)
-- [Complete code and line-by-line explanation](Column%20Sum%20Buffer%20-%20Code%20Walkthrough.md)
-- [Pipelined column calculator: code and explanation](Pipelined%20Column%20SAD%20Calculator.md)
-- [Single engine: code, interfaces and row timing](Single%20SAD%20Engine.md)
-- [Circular row buffer: code and abstraction](Circular%20Row%20Buffer.md)
-- [System-level module blocks: Nios V, Ethernet, SDRAM, VGA, accelerator](Module%20Blocks.canvas)
-- [Accelerator internals: transport, row buffers, taps, lanes, reducer, writeback](Accelerator%20Blocks.canvas)
-- [One engine's submodules](SAD%20Engine%20Blocks.canvas)
-- [Testbench guide](Testbench%20Guide.md)
+- [Complete code and line-by-line explanation](Accelerator/Engine/Column%20Sum%20Buffer%20-%20Code%20Walkthrough.md)
+- [Pipelined column calculator: code and explanation](Accelerator/Engine/Pipelined%20Column%20SAD%20Calculator.md)
+- [Single engine: code, interfaces and row timing](Accelerator/Engine/Single%20SAD%20Engine.md)
+- [Circular row buffer: code and abstraction](Accelerator/Frontend/Circular%20Row%20Buffer.md)
+- [System-level module blocks: Nios V, Ethernet, SDRAM, VGA, accelerator](System/Module%20Blocks.canvas)
+- [Accelerator internals: transport, row buffers, taps, lanes, reducer, writeback](Accelerator/Accelerator%20Blocks.canvas)
+- [One engine's submodules](Accelerator/Engine/SAD%20Engine%20Blocks.canvas)
+- [Testbench guide](Verification/Testbench%20Guide.md)
 - [Synthesizable SystemVerilog modules](rtl/)
-- [Interface contract](Interface%20Contract.md)
-- [Rolling SAD mathematics](Rolling%20SAD%20Math.md)
-- [Verification](Verification.md)
+- [Interface contract](System/Interface%20Contract.md)
+- [Rolling SAD mathematics](Accelerator/Engine/Rolling%20SAD%20Math.md)
+- [Verification](Verification/Verification.md)
 - [Progress log](docs/progress.md)
 - [GitHub update workflow](docs/github-workflow.md)
 
@@ -61,11 +61,11 @@ python scripts/run_tests.py --suite engine --case 11:8 --vcd
 
 Windows may alternatively use the local, untracked portable installation at `tools/mingw64/bin/`. No third-party Python packages are required by these tests. Standalone SV benches are tracked in `tests/rtl/`. Compiled simulations, optional waveforms and legacy vectors are generated in `build/`; results go to `sim/results.txt`. See the testbench guide for parameter matrices and extra seeds.
 
-GitHub Actions reruns all checks for every push and pull request. Simulation output is available as a workflow artifact. Cloud CI does not run Quartus or board hardware tests.
+GitHub Actions reruns all checks for every push and pull request. Simulation output is available as a workflow artifact. Cloud CI does not run Quartus or board hardware tests. Every new functional RTL module must arrive with its code-adjacent walkthrough and standalone self-checking bench, registered in the runner; `check_walkthrough.py` rejects missing coverage.
 
 ### Open in Obsidian
 
-Choose **Open folder as vault** and select the repository root. Open **Home**, **Architecture.canvas** (note map), or **Module Blocks.canvas** (planned whole-system view). From Module Blocks follow **Accelerator Blocks.canvas** → **Stereo Frontend Blocks.canvas** / **SAD Engine Blocks.canvas** for deeper levels. Use the built-in Graph view to navigate linked notes. No community plugins are required. Personal workspace layout is not committed.
+Choose **Open folder as vault** and select the repository root. Start at **Home** and follow the linked spine: **System Architecture** → **Accelerator Architecture** → **Stereo Frontend** / **SAD Engine Architecture** → individual modules and **Verification Map**. The same levels are nested in `System/`, `Accelerator/Frontend/`, `Accelerator/Engine/`, and `Verification/`. Folders do not create Obsidian Graph links by themselves; the hub notes do. The root **Architecture.canvas** remains a broad note map; the drill-down canvases are alongside their level's notes. No community plugins are required. Personal workspace layout is not committed.
 
 ## Architecture direction
 
@@ -102,23 +102,20 @@ These documents describe the broader planned system. The implemented RTL and cur
 ## Layout
 
 ```text
-rtl/               implemented SystemVerilog components
-scripts/           HDL test runner and documentation consistency check
-constraints/       component timing constraints
-Architecture.canvas note map
-Module Blocks.canvas planned whole-system CPU/peripheral/interconnect/SDRAM map
-Accelerator Blocks.canvas planned accelerator transport/control/datapath map
-Stereo Frontend Blocks.canvas row-buffer, cache and disparity-tap drill-down
-SAD Engine Blocks.canvas implemented single-engine RTL composition
-*.md               linked Obsidian design and study notes
-Stereo_SAD*.qpf/qsf Quartus buffer, engine and row-buffer projects
-.github/workflows/ automatic RTL checks
-hardware/          preserved board-system integration placeholder
-software/          preserved Nios V software planning
-tests/rtl/         tracked standalone self-checking SV benches
-tests/README.md    current tests and preserved future system-test plan
-docs/             feasibility reports, diagrams and progress
-tools/            tracked report-generation scripts (portable binaries ignored)
+Home.md / Architecture.canvas   dashboard and broad note map
+System/                         whole-system canvas, CPU, hardware and interface contract
+Accelerator/                    accelerator schematic, bank, reducer and timing
+Accelerator/Frontend/           stereo frontend canvas and row-buffer walkthrough
+Accelerator/Engine/             engine canvas, RTL walkthroughs and SAD mathematics
+Verification/                   evidence, testbench guide and graph hub
+rtl/ and tests/rtl/             implemented SystemVerilog and standalone benches
+scripts/                        HDL test runner and coverage/walkthrough checks
+constraints/                    component timing constraints
+Stereo_SAD*.qpf/qsf             Quartus buffer, engine and row-buffer projects
+.github/workflows/              automatic RTL checks
+hardware/ and software/         preserved integration placeholders
+docs/                           feasibility reports, diagrams and progress
+tools/                          tracked report-generation scripts (portable binaries ignored)
 ```
 
 ## Progress and publishing

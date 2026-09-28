@@ -19,11 +19,11 @@ Local simulator: Icarus Verilog 13.0. GitHub Actions runs the same benches on Ub
 
 ## Recorded evidence
 
-- Latest local generated report: [sim/results.txt](sim/results.txt).
-- Original buffer milestone: [column-buffer-simulation.txt](docs/verification/column-buffer-simulation.txt).
-- Engine/module milestone: [single-engine-simulation.txt](docs/verification/single-engine-simulation.txt).
-- Extra-seed engine/waveform run: [single-engine-extra-seed.txt](docs/verification/single-engine-extra-seed.txt).
-- Synthesis summary: [single-engine-synthesis.md](docs/verification/single-engine-synthesis.md).
+- Latest local generated report: [sim/results.txt](../sim/results.txt).
+- Original buffer milestone: [column-buffer-simulation.txt](../docs/verification/column-buffer-simulation.txt).
+- Engine/module milestone: [single-engine-simulation.txt](../docs/verification/single-engine-simulation.txt).
+- Extra-seed engine/waveform run: [single-engine-extra-seed.txt](../docs/verification/single-engine-extra-seed.txt).
+- Synthesis summary: [single-engine-synthesis.md](../docs/verification/single-engine-synthesis.md).
 - GitHub Actions uploads fresh results and test artifacts for each run.
 
 ## Synthesis versus timing
@@ -34,4 +34,4 @@ The original `Stereo_SAD.qpf` buffer-only project also previously passed (one pr
 
 No fitting, fully constrained timing, board programming, CPU integration or physical image test has been claimed.
 
-`Stereo_SAD_RowBuffer.qpf` synthesizes an `IMG_W=16` smoke wrapper, not the functional `IMG_W=640` default. That shorter run passed with zero errors and zero warnings (3156 logic cells, zero memory bits). The 640-wide combinational readout did not finish Analysis & Synthesis within 300 seconds. See [row-buffer-synthesis.md](docs/verification/row-buffer-synthesis.md).
+`Stereo_SAD_RowBuffer.qpf` synthesizes an `IMG_W=16` smoke wrapper, not the functional `IMG_W=640` default. That shorter run passed with zero errors and zero warnings (3156 logic cells, zero memory bits). The 640-wide combinational readout did not finish Analysis & Synthesis within 300 seconds. See [row-buffer-synthesis.md](../docs/verification/row-buffer-synthesis.md).

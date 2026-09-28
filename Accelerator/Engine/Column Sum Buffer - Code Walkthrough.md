@@ -35,7 +35,7 @@ flowchart LR
 >
 > This module starts **after** the eleven absolute differences for a new column have already been added. It does not accept raw image pixels.
 
-The embedded code is a source snapshot. If the RTL changes later, refresh this note before relying on its line numbers. The source of truth is [column_sum_buffer.sv](rtl/column_sum_buffer.sv).
+The embedded code is a source snapshot. If the RTL changes later, refresh this note before relying on its line numbers. The source of truth is [column_sum_buffer.sv](../../rtl/column_sum_buffer.sv).
 
 ## Complete SystemVerilog source
 

@@ -2,7 +2,7 @@
 
 Detailed study note: [[Column Sum Buffer - Code Walkthrough]].
 #implemented
-Source: [RTL](rtl/column_sum_buffer.sv)
+Source: [RTL](../../rtl/column_sum_buffer.sv)
 
 One lane; defaults K=11, PIXEL_W=8. A ten-entry ring retains previous column sums. A running total retains their sum. Before each accepted sample, wr_ptr identifies the oldest entry once full.
 

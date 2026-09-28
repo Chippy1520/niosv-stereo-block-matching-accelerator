@@ -1,6 +1,13 @@
 # Progress log
 
-## Current documentation milestone — calculator, engine, and both circular buffers
+## Vault hierarchy and HDL-module delivery rule
+
+- [x] Organize study notes and drill-down canvases as system → accelerator → frontend/engine → module, with linked Obsidian hub notes. Preserve the root dashboard, project files, HDL, and existing code walkthroughs.
+- [x] Update the note map and relative links; check wiki/Markdown targets and canvas file/edge references after relocation.
+- [x] Require every new functional RTL module to register its exact-code walkthrough and standalone self-checking bench in the test runner. The existing synthesis-only smoke wrapper remains an explicit exception.
+- [x] Run the 38-case RTL regression and five deliberate-fault checks; confirm an unregistered new RTL file is rejected.
+
+## Previous documentation milestone — calculator, engine, and both circular buffers
 
 - [x] Add code-adjacent explanations and Obsidian-rendered diagrams to [[Pipelined Column SAD Calculator]], [[Single SAD Engine]], [[Circular Row Buffer]], and [[Column Sum Buffer - Code Walkthrough]].
 - [x] Distinguish the image-row ring from the per-engine column-history ring; document valid/bubble propagation, warmup, row drain, and stage boundaries.

@@ -3,7 +3,7 @@
 
 [[Home]] · [[Pipelined Column SAD Calculator]] · [[Column Sum Buffer]] · [[Testbench Guide]] · [[Disparity Bank]]
 
-Source: [rtl/sad_engine.sv](rtl/sad_engine.sv). Standalone bench: [tb_sad_engine.sv](tests/rtl/tb_sad_engine.sv).
+Source: [rtl/sad_engine.sv](../../rtl/sad_engine.sv). Standalone bench: [tb_sad_engine.sv](../../tests/rtl/tb_sad_engine.sv).
 
 ## First, the story — no RTL yet
 
@@ -71,7 +71,7 @@ endmodule
 
 ## Code walkthrough — source excerpts with line-by-line mapping
 
-Source-file line numbers refer to [rtl/sad_engine.sv](rtl/sad_engine.sv), not this Markdown page. This wrapper **instantiates** the calculator and history buffer; it has no separate arithmetic register of its own.
+Source-file line numbers refer to [rtl/sad_engine.sv](../../rtl/sad_engine.sv), not this Markdown page. This wrapper **instantiates** the calculator and history buffer; it has no separate arithmetic register of its own.
 
 ### 1. Contract, dimensions and ports (lines 1–24)
 
