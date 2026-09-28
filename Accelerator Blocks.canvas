@@ -1,0 +1,170 @@
+{
+  "nodes": [
+    {
+      "id": "legend",
+      "type": "text",
+      "text": "## Accelerator view · mostly planned\n\nOrange = proposed integration; the row-buffer *type* and one sad_engine are verified standalone RTL.\nThis is a design contract, not an integrated accelerator bitstream.\n[[Module Blocks.canvas|Back to system]]",
+      "x": -90,
+      "y": -490,
+      "width": 940,
+      "height": 290,
+      "color": "5"
+    },
+    {
+      "id": "control",
+      "type": "text",
+      "text": "## CSR + frame/pass controller · planned\n\nCPU CSRs: config/start/status + performance counters. Sequence rows and disparity groups; carry coordinate/valid tags; drain and clear at row boundaries. Backpressure/FIFOs needed at memory boundary.",
+      "x": 930,
+      "y": -490,
+      "width": 930,
+      "height": 290,
+      "color": "2"
+    },
+    {
+      "id": "transport",
+      "type": "text",
+      "text": "## SDRAM transport · planned\n\nAddress generator + Avalon-MM memory master + FIFOs. Read left/right frames and (for later groups) prior-best records from shared SDRAM. Same master also commits output writes; CPU does not stream each pixel through a CSR.",
+      "x": -80,
+      "y": 270,
+      "width": 420,
+      "height": 320,
+      "color": "2"
+    },
+    {
+      "id": "rows",
+      "type": "text",
+      "text": "## Two vertical row buffers\n\nLeft/right circular_row_buffer instances make K-row columns L[x], R[x]. The module type exists; paired wiring is planned.\n[[Stereo Frontend Blocks.canvas|Open row/tap detail]]",
+      "x": 515,
+      "y": 270,
+      "width": 410,
+      "height": 320,
+      "color": "2"
+    },
+    {
+      "id": "cache",
+      "type": "text",
+      "text": "## Column cache + disparity taps · planned\n\nRight shift history Q[d]=R[x−d] and matching left delay. Supply aligned columns + per-lane valid for active group.",
+      "x": 1085,
+      "y": 270,
+      "width": 440,
+      "height": 320,
+      "color": "2"
+    },
+    {
+      "id": "bank",
+      "type": "text",
+      "text": "## P_LANES parallel SAD engines · planned bank\n\nOne sad_engine per active disparity (single-lane RTL exists). Each produces a K×K cost + valid; no image memory inside.\n[[SAD Engine Blocks.canvas|Open one engine]]",
+      "x": 1690,
+      "y": 270,
+      "width": 450,
+      "height": 320,
+      "color": "2"
+    },
+    {
+      "id": "reducer",
+      "type": "text",
+      "text": "## Comparator tree · planned\n\nMinimum valid (cost,d) among parallel lanes for the SAME (x,y). Carry tags through pipeline; lower d wins ties.",
+      "x": 2310,
+      "y": 270,
+      "width": 430,
+      "height": 320,
+      "color": "2"
+    },
+    {
+      "id": "merge",
+      "type": "text",
+      "text": "## Cross-group best merge · planned\n\nIf D_MAX>P_LANES, compare this group winner with the prior best record read from shared SDRAM; retain the global winner across passes. If one group covers all d, bypass this step.",
+      "x": 2910,
+      "y": 270,
+      "width": 465,
+      "height": 320,
+      "color": "2"
+    },
+    {
+      "id": "writeback",
+      "type": "text",
+      "text": "## SDRAM result writeback · planned\n\nUpdated best for the next group, or final disparity map. Output FIFO/write acceptance and done are handled by the SAME transport/master at left.",
+      "x": 3520,
+      "y": 270,
+      "width": 425,
+      "height": 320,
+      "color": "2"
+    },
+    {
+      "id": "handoff",
+      "type": "text",
+      "text": "## One accepted-item convention\n\nMemory-side valid/ready + FIFOs absorb SDRAM stalls. Current row-buffer/engine RTL has valid only, NO ready: controller must pause paired pixels and preserve metadata or add an elastic boundary. Output done only after final write is accepted.",
+      "x": 980,
+      "y": 840,
+      "width": 1350,
+      "height": 215,
+      "color": "5"
+    }
+  ],
+  "edges": [
+    {
+      "id": "pixels",
+      "fromNode": "transport",
+      "toNode": "rows",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "paired pixel streams + (x,y), valid"
+    },
+    {
+      "id": "columns",
+      "fromNode": "rows",
+      "toNode": "cache",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "L[x], R[x] + valid"
+    },
+    {
+      "id": "pairs",
+      "fromNode": "cache",
+      "toNode": "bank",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "aligned tap per d + valid"
+    },
+    {
+      "id": "costs",
+      "fromNode": "bank",
+      "toNode": "reducer",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "cost, d, valid, (x,y)"
+    },
+    {
+      "id": "group-winner",
+      "fromNode": "reducer",
+      "toNode": "merge",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "minimum for this group"
+    },
+    {
+      "id": "output-write",
+      "fromNode": "merge",
+      "toNode": "writeback",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "updated / final (cost,d,x,y)"
+    },
+    {
+      "id": "setup-transport",
+      "fromNode": "control",
+      "toNode": "transport",
+      "fromSide": "left",
+      "toSide": "top",
+      "label": "addresses / backpressure sequencing"
+    },
+    {
+      "id": "setup-bank",
+      "fromNode": "control",
+      "toNode": "bank",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "label": "group base, row clear, tags"
+    }
+  ]
+}

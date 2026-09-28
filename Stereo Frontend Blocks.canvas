@@ -1,22 +1,152 @@
 {
-	"nodes":[
-		{"id":"front-group","type":"group","x":345,"y":65,"width":1455,"height":855,"color":"2","label":"STEREO COLUMN FRONTEND · planned assembly"},
-		{"id":"left-row","type":"text","text":"## Left circular_row_buffer · RTL\n\nSerial left pixels → complete K-row vertical L[x].\n[[Circular Row Buffer]]","x":425,"y":155,"width":330,"height":245,"color":"4"},
-		{"id":"right-row","type":"text","text":"## Right circular_row_buffer · same RTL\n\nSerial right pixels → complete K-row vertical R[x].\nSecond instance/wiring is planned.","x":425,"y":535,"width":330,"height":245,"color":"4"},
-		{"id":"left-delay","type":"text","text":"## Left alignment · planned\n\nDelay L[x] + valid/x one edge to match cache.","x":845,"y":155,"width":335,"height":245,"color":"2"},
-		{"id":"right-cache","type":"text","text":"## Right-column cache · planned\n\nShift WHOLE vertical columns: Q[0]=R[x], Q[d]=R[x−d]. Hold on invalid cycles; restart at output-row boundary.","x":845,"y":525,"width":335,"height":270,"color":"2"},
-		{"id":"taps","type":"text","text":"## Disparity taps · planned\n\nFor each fixed d=0…31, select Q[d]. Valid only when x≥d; no cross-row samples.","x":1275,"y":525,"width":400,"height":270,"color":"2"},
-		{"id":"pairs","type":"text","text":"## To engine d\n\nPair delayed L[x] with R[x−d], plus valid_d and x/row identity. Replicate per disparity.\n[[Module Blocks.canvas|Back to overview]]","x":1855,"y":305,"width":390,"height":265,"color":"2"},
-		{"id":"frontend-note","type":"text","text":"## Why this order?\n\nRow buffers collect pixels VERTICALLY. Disparity shifts columns HORIZONTALLY, *after* row buffering. Example: x=6,d=2 → L[6] vs R[4]. The cache is not the engine’s horizontal SAD-cost history.","x":520,"y":1030,"width":1135,"height":195,"color":"5"},
-		{"id":"source","type":"text","text":"## Paired pixel streams\n\nSame pixel coordinate and valid on both inputs.","x":-280,"y":308,"width":270,"height":185,"color":"6"}
-	],
-	"edges":[
-		{"id":"left-pixels","fromNode":"source","fromSide":"right","toNode":"left-row","toSide":"left","label":"left pixel + valid"},
-		{"id":"right-pixels","fromNode":"source","fromSide":"right","toNode":"right-row","toSide":"left","label":"right pixel + same valid"},
-		{"id":"left-sync","fromNode":"left-row","fromSide":"right","toNode":"left-delay","toSide":"left","label":"L[x] + valid + x"},
-		{"id":"right-shift","fromNode":"right-row","fromSide":"right","toNode":"right-cache","toSide":"left","label":"R[x] + valid + x"},
-		{"id":"select","fromNode":"right-cache","fromSide":"right","toNode":"taps","toSide":"left","label":"Q[0..31]"},
-		{"id":"left-out","fromNode":"left-delay","fromSide":"right","toNode":"pairs","toSide":"top","label":"delayed L[x]"},
-		{"id":"right-out","fromNode":"taps","fromSide":"right","toNode":"pairs","toSide":"left","label":"R[x−d] + valid_d"}
-	]
+  "nodes": [
+    {
+      "id": "front-group",
+      "type": "group",
+      "x": 345,
+      "y": 65,
+      "width": 1455,
+      "height": 855,
+      "color": "2",
+      "label": "STEREO COLUMN FRONTEND · planned assembly"
+    },
+    {
+      "id": "left-row",
+      "type": "text",
+      "text": "## Left circular_row_buffer · RTL\n\nSerial left pixels → complete K-row vertical L[x].\n[[Circular Row Buffer]]",
+      "x": 425,
+      "y": 155,
+      "width": 330,
+      "height": 245,
+      "color": "4"
+    },
+    {
+      "id": "right-row",
+      "type": "text",
+      "text": "## Right circular_row_buffer · same RTL\n\nSerial right pixels → complete K-row vertical R[x].\nSecond instance/wiring is planned.",
+      "x": 425,
+      "y": 535,
+      "width": 330,
+      "height": 245,
+      "color": "4"
+    },
+    {
+      "id": "left-delay",
+      "type": "text",
+      "text": "## Left alignment · planned\n\nDelay L[x] + valid/x one edge to match cache.",
+      "x": 845,
+      "y": 155,
+      "width": 335,
+      "height": 245,
+      "color": "2"
+    },
+    {
+      "id": "right-cache",
+      "type": "text",
+      "text": "## Right-column cache · planned\n\nShift WHOLE vertical columns: Q[0]=R[x], Q[d]=R[x−d] for d<D_MAX. Hold on invalid cycles; restart at output-row boundary.",
+      "x": 845,
+      "y": 525,
+      "width": 335,
+      "height": 270,
+      "color": "2"
+    },
+    {
+      "id": "taps",
+      "type": "text",
+      "text": "## Disparity taps · planned\n\nFor active lane k, choose d=group_base+k<D_MAX and tap Q[d]. Valid only when x≥d; no cross-row samples.",
+      "x": 1275,
+      "y": 525,
+      "width": 400,
+      "height": 270,
+      "color": "2"
+    },
+    {
+      "id": "pairs",
+      "type": "text",
+      "text": "## To engine d\n\nPair delayed L[x] with R[x−d], plus valid_d and x/row identity. Replicate per disparity.\n[[Accelerator Blocks.canvas|Back to accelerator]]",
+      "x": 1855,
+      "y": 305,
+      "width": 390,
+      "height": 265,
+      "color": "2"
+    },
+    {
+      "id": "frontend-note",
+      "type": "text",
+      "text": "## Why this order?\n\nRow buffers collect pixels VERTICALLY. Disparity shifts columns HORIZONTALLY, *after* row buffering. Example: x=6,d=2 → L[6] vs R[4]. The cache is not the engine’s horizontal SAD-cost history.",
+      "x": 520,
+      "y": 1030,
+      "width": 1135,
+      "height": 195,
+      "color": "5"
+    },
+    {
+      "id": "source",
+      "type": "text",
+      "text": "## Paired pixel streams\n\nSame pixel coordinate and valid on both inputs.",
+      "x": -280,
+      "y": 308,
+      "width": 270,
+      "height": 185,
+      "color": "6"
+    }
+  ],
+  "edges": [
+    {
+      "id": "left-pixels",
+      "fromNode": "source",
+      "fromSide": "right",
+      "toNode": "left-row",
+      "toSide": "left",
+      "label": "left pixel + valid"
+    },
+    {
+      "id": "right-pixels",
+      "fromNode": "source",
+      "fromSide": "right",
+      "toNode": "right-row",
+      "toSide": "left",
+      "label": "right pixel + same valid"
+    },
+    {
+      "id": "left-sync",
+      "fromNode": "left-row",
+      "fromSide": "right",
+      "toNode": "left-delay",
+      "toSide": "left",
+      "label": "L[x] + valid + x"
+    },
+    {
+      "id": "right-shift",
+      "fromNode": "right-row",
+      "fromSide": "right",
+      "toNode": "right-cache",
+      "toSide": "left",
+      "label": "R[x] + valid + x"
+    },
+    {
+      "id": "select",
+      "fromNode": "right-cache",
+      "fromSide": "right",
+      "toNode": "taps",
+      "toSide": "left",
+      "label": "Q[0..31]"
+    },
+    {
+      "id": "left-out",
+      "fromNode": "left-delay",
+      "fromSide": "right",
+      "toNode": "pairs",
+      "toSide": "top",
+      "label": "delayed L[x]"
+    },
+    {
+      "id": "right-out",
+      "fromNode": "taps",
+      "fromSide": "right",
+      "toNode": "pairs",
+      "toSide": "left",
+      "label": "R[x−d] + valid_d"
+    }
+  ]
 }

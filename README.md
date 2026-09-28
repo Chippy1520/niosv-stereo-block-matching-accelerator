@@ -25,7 +25,9 @@ SystemVerilog stereo SAD accelerator under incremental development for the **Ter
 - [Pipelined column calculator: code and explanation](Pipelined%20Column%20SAD%20Calculator.md)
 - [Single engine: code, interfaces and row timing](Single%20SAD%20Engine.md)
 - [Circular row buffer: code and abstraction](Circular%20Row%20Buffer.md)
-- [Module blocks canvas](Module%20Blocks.canvas)
+- [System-level module blocks: Nios V, Ethernet, SDRAM, VGA, accelerator](Module%20Blocks.canvas)
+- [Accelerator internals: transport, row buffers, taps, lanes, reducer, writeback](Accelerator%20Blocks.canvas)
+- [One engine's submodules](SAD%20Engine%20Blocks.canvas)
 - [Testbench guide](Testbench%20Guide.md)
 - [Synthesizable SystemVerilog modules](rtl/)
 - [Interface contract](Interface%20Contract.md)
@@ -63,22 +65,24 @@ GitHub Actions reruns all checks for every push and pull request. Simulation out
 
 ### Open in Obsidian
 
-Choose **Open folder as vault** and select the repository root. Open **Home**, **Architecture.canvas**, or **Module Blocks.canvas**. Use the built-in Graph view to navigate linked notes. No community plugins are required. Personal workspace layout is not committed.
+Choose **Open folder as vault** and select the repository root. Open **Home**, **Architecture.canvas** (note map), or **Module Blocks.canvas** (planned whole-system view). From Module Blocks follow **Accelerator Blocks.canvas** → **Stereo Frontend Blocks.canvas** / **SAD Engine Blocks.canvas** for deeper levels. Use the built-in Graph view to navigate linked notes. No community plugins are required. Personal workspace layout is not committed.
 
 ## Architecture direction
 
 ```text
-Rectified grayscale stereo images
-    → circular_row_buffer (implemented: one image, K-row ring, vertical column)
-    → disparity tap (planned)
-    → parallel disparity lanes (planned: 32)
-        → column_sad (implemented: pipelined differences and column sum)
-        → column_sum_buffer (implemented: history and final window adder)
-        [one integrated sad_engine is implemented and tested]
-    → pipelined minimum-SAD/disparity tree
-    → disparity output
+host frames (optional Ethernet) ──┐
+Nios V control / CPU reference ────┼→ Platform Designer interconnect ↔ SDRAM controller ↔ shared SDRAM
+VGA display (optional) ────────────┘               ↕
+                                         stereo SAD accelerator (planned integration)
+                                            SDRAM transport + CSRs/controller
+                                            → two row buffers → right-column cache/taps
+                                            → P_LANES parallel sad_engine instances
+                                                column_sad → column_sum_buffer
+                                            → comparator tree → cross-group best merge
+                                            → shared-SDRAM output writeback
 ```
 
+[[Module Blocks.canvas]] is the planned *system* wiring; [[Accelerator Blocks.canvas]] is the planned *accelerator* hierarchy, with [[SAD Engine Blocks.canvas]] for the implemented single-lane wrapper. Ethernet packet staging and VGA display are optional and unimplemented here. `P_LANES` is a compile-time design choice: 32 lanes over disparities 0–31 is one single-pass example, while fewer lanes over a larger range require repeated groups and best-state merging.
 The history buffer updates `H_next = H - oldest + newest`; it must retain outgoing values, not just H. The registered SAD is `H + newest` using the pre-update H. Kernel size is currently a synthesis-time parameter. Clear discards a simultaneous valid input and flushes all pending engine work. For normal row boundaries, drain ceil(log2(K))+1 invalid-input clock edges before asserting clear on a separate edge. Coordinates, borders and lane validity require integration-level control.
 
 The shared-SDRAM system proposal remains an integration goal; its implementation is not implied by the working buffer.
@@ -102,7 +106,10 @@ rtl/               implemented SystemVerilog components
 scripts/           HDL test runner and documentation consistency check
 constraints/       component timing constraints
 Architecture.canvas note map
-Module Blocks.canvas port-level functional blocks and interconnects
+Module Blocks.canvas planned whole-system CPU/peripheral/interconnect/SDRAM map
+Accelerator Blocks.canvas planned accelerator transport/control/datapath map
+Stereo Frontend Blocks.canvas row-buffer, cache and disparity-tap drill-down
+SAD Engine Blocks.canvas implemented single-engine RTL composition
 *.md               linked Obsidian design and study notes
 Stereo_SAD*.qpf/qsf Quartus buffer, engine and row-buffer projects
 .github/workflows/ automatic RTL checks

@@ -27,9 +27,9 @@ Assumption: grayscale pixels are 8-bit, image width 640 and height 480; confirm 
 
 [[Pipelined Column SAD Calculator]] · [[Single SAD Engine]] · [[Circular Row Buffer]] · [[Testbench Guide]]
 
-[[Architecture.canvas]] · [[Module Blocks.canvas|Module blocks]] · [[Rolling SAD Math]] · [[Interface Contract]] · [[Timing and Pipelining]] · [[Hardware Integration]]
+[[Architecture.canvas]] · [[Module Blocks.canvas|System blocks]] · [[Accelerator Blocks.canvas|Accelerator blocks]] · [[Stereo Frontend Blocks.canvas|Row buffers and taps]] · [[SAD Engine Blocks.canvas|One engine]] · [[Rolling SAD Math]] · [[Interface Contract]] · [[Timing and Pipelining]] · [[Hardware Integration]]
 
 The vault root is also the source project root. Open graph using Ctrl+G.
 RTL: [column_sum_buffer.sv](rtl/column_sum_buffer.sv)
 Test runner: [run_tests.py](scripts/run_tests.py)
-No community plugins required. The row buffer, calculator, history buffer and single engine are implemented and independently tested. Open [[Module Blocks.canvas]] for ports and interconnects. Disparity alignment and the multi-lane bank remain planned.
+No community plugins required. The row buffer, calculator, history buffer and single engine are implemented and independently tested. Open [[Module Blocks.canvas]] for the planned Nios V / shared-SDRAM / Ethernet / VGA system, then [[Accelerator Blocks.canvas]] for the accelerator's internal flow. Disparity alignment, memory transport and the multi-lane bank remain planned.

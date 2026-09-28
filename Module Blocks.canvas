@@ -1,18 +1,142 @@
 {
-	"nodes":[
-		{"id":"key","type":"text","text":"## Stereo SAD · module blocks\n\nData moves left → right. Orange = planned integration; green RTL lives *inside* the linked drill-downs.\nOpen the two linked canvases to zoom in.","x":0,"y":0,"width":590,"height":150,"color":"5"},
-		{"id":"control","type":"text","text":"## Row/frame control · planned\n\nPause paired inputs at an output-row end; drain scores; then clear tap cache + engines. Preserve row-buffer history until the next frame.","x":640,"y":0,"width":650,"height":175,"color":"2"},
-		{"id":"source","type":"text","text":"## Paired pixel source · external\n\nRectified left/right raster pixels, accepted together.","x":0,"y":310,"width":290,"height":175,"color":"6"},
-		{"id":"frontend","type":"text","text":"## Stereo column frontend · planned assembly\n\nTwo vertical row buffers → right-column cache + disparity taps; matching left delay.\nOut per d: (L[x], R[x−d], valid_d).\n[[Stereo Frontend Blocks.canvas|Open frontend blocks]]","x":410,"y":280,"width":430,"height":235,"color":"2"},
-		{"id":"bank","type":"text","text":"## SAD bank · planned replication\n\n32 × sad_engine (d=0…31); the single-lane RTL exists.\nEach lane: vertical column SAD → horizontal K-column SAD.\n[[SAD Engine Blocks.canvas|Open one engine]]","x":965,"y":280,"width":435,"height":235,"color":"2"},
-		{"id":"winner","type":"text","text":"## Minimum selector · planned\n\nCompare valid same-coordinate (SAD, d) tuples.\nOut: best disparity + cost.","x":1525,"y":310,"width":350,"height":175,"color":"2"}
-	],
-	"edges":[
-		{"id":"pixels","fromNode":"source","toNode":"frontend","fromSide":"right","toSide":"left","label":"paired pixels + valid"},
-		{"id":"aligned","fromNode":"frontend","toNode":"bank","fromSide":"right","toSide":"left","label":"aligned columns + valid per d"},
-		{"id":"scores","fromNode":"bank","toNode":"winner","fromSide":"right","toSide":"left","label":"cost + valid + d + coordinate"},
-		{"id":"pause","fromNode":"control","toNode":"source","fromSide":"left","toSide":"top","label":"pause"},
-		{"id":"frontend-clear","fromNode":"control","toNode":"frontend","fromSide":"bottom","toSide":"top","label":"cache clear / frame clear"},
-		{"id":"bank-clear","fromNode":"control","toNode":"bank","fromSide":"bottom","toSide":"top","label":"drain then row clear"}
-	]
+  "nodes": [
+    {
+      "id": "legend",
+      "type": "text",
+      "text": "## System view · planned integration\n\nShared SDRAM is the source of left/right frames and the destination of the disparity map. Arrows show intended transactions, NOT completed board wiring.\n[[Accelerator Blocks.canvas|Open accelerator internals]]",
+      "x": -70,
+      "y": -380,
+      "width": 790,
+      "height": 220,
+      "color": "5"
+    },
+    {
+      "id": "ethernet",
+      "type": "text",
+      "text": "## Ethernet controller\n\nHost/frame ingress (optional). CPU-facing peripheral; how payloads reach SDRAM (CPU copy vs DMA) remains a design choice.",
+      "x": -50,
+      "y": 0,
+      "width": 380,
+      "height": 235,
+      "color": "2"
+    },
+    {
+      "id": "cpu",
+      "type": "text",
+      "text": "## Nios V processor\n\nDataset/CPU baseline, accelerator configuration, launch and result checking. Separate Hello World proven; THIS combined system is not integrated.",
+      "x": 485,
+      "y": 0,
+      "width": 405,
+      "height": 235,
+      "color": "2"
+    },
+    {
+      "id": "vga",
+      "type": "text",
+      "text": "## VGA controller\n\nOptional display path: read a completed disparity framebuffer from shared SDRAM and drive VGA. Not in benchmark timing.",
+      "x": 1660,
+      "y": 0,
+      "width": 410,
+      "height": 235,
+      "color": "2"
+    },
+    {
+      "id": "bus",
+      "type": "text",
+      "text": "## Platform Designer interconnect\n\nAddress decode + arbitration + protocol adaptation. CPU and accelerator reach the SAME SDRAM address space.",
+      "x": 810,
+      "y": 420,
+      "width": 560,
+      "height": 245,
+      "color": "2"
+    },
+    {
+      "id": "accelerator",
+      "type": "text",
+      "text": "## Stereo SAD accelerator IP\n\nPlanned CSR slave + autonomous memory master; reads stereo frames, writes disparity results. Only component datapath RTL is implemented.\n[[Accelerator Blocks.canvas|Open accelerator internals]]",
+      "x": 1670,
+      "y": 420,
+      "width": 470,
+      "height": 270,
+      "color": "2"
+    },
+    {
+      "id": "sdram-controller",
+      "type": "text",
+      "text": "## External SDRAM controller\n\nConverts shared-memory transactions to DE2-115 SDRAM pins/timing. Not integrated in this checkout.",
+      "x": 790,
+      "y": 850,
+      "width": 480,
+      "height": 185,
+      "color": "2"
+    },
+    {
+      "id": "sdram",
+      "type": "text",
+      "text": "## Physical SDRAM · shared frame store\n\nLeft/right frames, optional best-state workspace, disparity output. CPU and accelerator use the same address map.",
+      "x": 790,
+      "y": 1140,
+      "width": 480,
+      "height": 205,
+      "color": "6"
+    }
+  ],
+  "edges": [
+    {
+      "id": "eth-bus",
+      "fromNode": "ethernet",
+      "toNode": "bus",
+      "fromSide": "bottom",
+      "toSide": "left",
+      "label": "MMIO/status; frame ingress staging TBD"
+    },
+    {
+      "id": "cpu-bus",
+      "fromNode": "cpu",
+      "toNode": "bus",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "label": "CPU memory + CSR transactions"
+    },
+    {
+      "id": "vga-bus",
+      "fromNode": "vga",
+      "toNode": "bus",
+      "fromSide": "bottom",
+      "toSide": "right",
+      "label": "optional framebuffer reads"
+    },
+    {
+      "id": "bus-accel-csr",
+      "fromNode": "bus",
+      "toNode": "accelerator",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "CPU configuration/status via CSR"
+    },
+    {
+      "id": "accel-bus-master",
+      "fromNode": "accelerator",
+      "toNode": "bus",
+      "fromSide": "left",
+      "toSide": "right",
+      "label": "accelerator memory-master reads/writes"
+    },
+    {
+      "id": "bus-sdram",
+      "fromNode": "bus",
+      "toNode": "sdram-controller",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "label": "arbitrated shared-memory requests"
+    },
+    {
+      "id": "controller-dram",
+      "fromNode": "sdram-controller",
+      "toNode": "sdram",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "label": "SDRAM command/data"
+    }
+  ]
 }

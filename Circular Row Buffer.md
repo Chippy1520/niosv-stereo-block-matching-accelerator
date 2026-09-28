@@ -1,7 +1,7 @@
 # Circular Row Buffer
 #implemented
 
-[[Home]] · [[Module Blocks.canvas|Module blocks]] · [[Image Line Buffers]] · [[Single SAD Engine]] · [[Testbench Guide]]
+[[Home]] · [[Module Blocks.canvas|System blocks]] · [[Accelerator Blocks.canvas|Accelerator blocks]] · [[Stereo Frontend Blocks.canvas|Frontend drill-down]] · [[Image Line Buffers]] · [[Single SAD Engine]] · [[Testbench Guide]]
 
 Source: [rtl/circular_row_buffer.sv](rtl/circular_row_buffer.sv). Bench: [tb_circular_row_buffer.sv](tests/rtl/tb_circular_row_buffer.sv).
 
@@ -312,4 +312,4 @@ python scripts/run_tests.py --suite row
 python scripts/run_tests.py --suite row --case 11:8:8 --vcd
 ```
 
-The scoreboard stores a flat image and rebuilds each column from original pixels. It does not copy the ring pointer. Open **Stereo_SAD_RowBuffer.qpf** for component synthesis. See [[Module Blocks.canvas]] for the port-level interconnect.
+The scoreboard stores a flat image and rebuilds each column from original pixels. It does not copy the ring pointer. Open **Stereo_SAD_RowBuffer.qpf** for component synthesis. See [[Accelerator Blocks.canvas]] for its place in the proposed datapath and [[Stereo Frontend Blocks.canvas]] for the row-buffer/tap interconnect.

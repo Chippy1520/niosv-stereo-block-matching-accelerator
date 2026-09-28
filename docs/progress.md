@@ -12,7 +12,7 @@
 - [x] Keep disparity shift, pairing, border policy and engine drain outside this module.
 - [x] Add `tb_circular_row_buffer.sv`. The reference is a flat image, not a copy of the ring.
 - [x] Run eight `(K,P,W)` cases, including `K=1`, `IMG_W=1`, bubbles, clear-with-valid and random traffic.
-- [x] Add [[Module Blocks.canvas]] with ports, controls and interconnects. Orange blocks are not RTL.
+- [x] Add the component-level canvas (subsequently split into system-level [[Module Blocks.canvas]] and [[Accelerator Blocks.canvas]] / [[Stereo Frontend Blocks.canvas]] drill-downs). Orange stages remain planned, not RTL.
 - [ ] Connect two instances through a disparity tap and row-drain controller. Not this milestone.
 - [x] Quartus smoke synthesis of `circular_row_buffer_synth` (`IMG_W=16`): 0 errors, 0 warnings, 3156 logic cells before fitting. The `IMG_W=640` default did not finish Analysis & Synthesis within 300 seconds.
 
