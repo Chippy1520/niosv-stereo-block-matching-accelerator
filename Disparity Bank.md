@@ -1,7 +1,7 @@
 # Disparity Bank
 #planned
-Future wrapper: 32 lanes, provisionally disparities 0 through 31. Each lane owns [[Column SAD Engines]] and [[Column Sum Buffer]] state. Shared clocks and synchronized accepted-column advancement are required for meaningful comparisons.
+Future wrapper: 32 lanes, provisionally disparities 0 through 31. After the synchronized row buffers produce L[x] and R[x], a **planned** 32-position right-column shift cache supplies tap `Q[d]=R[x-d]` (whole K-pixel vertical columns); a matching one-clock left delay supplies L[x]. Lane d is a full [[Single SAD Engine]] instance, with its own [[Pipelined Column SAD Calculator]] and [[Column Sum Buffer]] state. The tap is a wire/selection from the cache, not another image-row buffer and not a state inside `sad_engine`. No cache, bank wrapper, or tap-valid logic is RTL yet. See the explanatory text box in [[Module Blocks.canvas]].
 
-Align output windows to the same left-image coordinate. Invalid right-image borders must be masked, not scored as zeros. A common valid-only interior or per-lane mask must be selected before integration.
+Align output windows to the same left-image coordinate: lane d can receive columns only for x≥d; its first full K-column score ends at x≥d+K−1. Invalid right-image borders must be masked, not scored as zeros. For a simultaneous 32-lane minimum, use the common valid-only interior x≥K−1+31 or a correctly tagged per-lane mask. Choose that policy before integration. Pause upstream paired pixels at an output-row end, drain engine outputs, then clear cache and engine histories on a separate edge; keep the two row buffers' vertical history.
 
 Send aligned scores and disparity indices to [[Minimum Comparator Tree]]. Runtime search range can potentially mask lanes in a maximum-size bank; that control is not implemented yet.
