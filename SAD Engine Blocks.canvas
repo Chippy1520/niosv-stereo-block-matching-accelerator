@@ -1,0 +1,15 @@
+{
+	"nodes":[
+		{"id":"engine-group","type":"group","label":"sad_engine · one fixed-alignment lane (IMPLEMENTED RTL)","x":395,"y":90,"width":1100,"height":475,"color":"4"},
+		{"id":"pair","type":"text","text":"## Aligned column pair\n\nK left/right pixel pairs, valid. One selected disparity d; no image memory inside.","x":0,"y":255,"width":285,"height":200,"color":"6"},
+		{"id":"calculator","type":"text","text":"## column_sad · RTL\n\nParallel |L−R| per row; registered adder tree → vertical column cost + valid.\n[[Pipelined Column SAD Calculator]]","x":465,"y":210,"width":445,"height":245,"color":"4"},
+		{"id":"history","type":"text","text":"## column_sum_buffer · RTL\n\nK−1 previous column COSTS + newest cost → registered K×K SAD + valid.\n[[Column Sum Buffer]]","x":970,"y":210,"width":445,"height":245,"color":"4"},
+		{"id":"out","type":"text","text":"## One lane result\n\nsad_o + valid_o; future bank attaches d and aligned coordinates.\n[[Module Blocks.canvas|Back to overview]]","x":1620,"y":255,"width":365,"height":220,"color":"4"},
+		{"id":"engine-note","type":"text","text":"## Inside vs. outside the engine\n\nThe right-image pixel-column cache and disparity taps are OUTSIDE sad_engine. This internal column_sum_buffer stores SAD COSTS, not right-image pixels. A planned 32-lane bank repeats the entire boxed wrapper.","x":490,"y":735,"width":990,"height":175,"color":"5"}
+	],
+	"edges":[
+		{"id":"to-calc","fromNode":"pair","toNode":"calculator","fromSide":"right","toSide":"left","label":"left/right columns + valid"},
+		{"id":"cost","fromNode":"calculator","toNode":"history","fromSide":"right","toSide":"left","label":"column_sum + valid"},
+		{"id":"result","fromNode":"history","toNode":"out","fromSide":"right","toSide":"left","label":"SAD + valid"}
+	]
+}
