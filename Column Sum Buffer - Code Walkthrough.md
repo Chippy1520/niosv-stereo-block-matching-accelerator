@@ -12,6 +12,23 @@ aliases:
 
 This note contains the complete `rtl/column_sum_buffer.sv` source, its line-by-line explanation, a worked example, and a comparison against the proposed stereo SAD architecture.
 
+## First, the story — no RTL yet
+
+A scorekeeper sees the costs of vertical image columns arrive one at a time. To score a square window eleven columns wide, the scorekeeper keeps the **previous ten** cost cards in a rotating tray and remembers their total. When the eleventh card arrives, adding the new card to that remembered total produces the complete window score. Before the next arrival, the scorekeeper removes the oldest card from the remembered total, adds the newest card, and replaces the oldest tray position. That way every subsequent score needs only a constant amount of arithmetic rather than summing eleven cards again. A missing card makes no change to the tray; a fresh scanline requires emptying the tray and rebuilding ten cards before scoring resumes.
+
+This module **never sees individual image pixels**. It receives a completed cost for one vertical column from the calculator. Its tray is not the separate image-row buffer. The diagram shows the idea before any syntax:
+
+```mermaid
+flowchart LR
+  C["New vertical-column cost"] --> A["Add to total of previous ten"] --> W["Complete square-window SAD"]
+  T["Rotating tray: ten previous costs"] --> H["Remembered total"] --> A
+  C --> U["Update total and rotate tray for next arrival"]
+  T --> U
+  U --> T
+```
+
+**Map for reading code:** tray → `history`; oldest tray position → `wr_ptr`; how many cards have arrived → `fill_count`; remembered total → `history_sum`; completed score → `sad_o`. Read the exact source and line-by-line account below.
+
 > [!important] Main comparison
 > **Your proposal:** retain ten previous column sums and combine them with the new column sum.
 > **Implemented:** retain those same ten column sums **and their running total**, so we do not need to add all ten stored sums again.

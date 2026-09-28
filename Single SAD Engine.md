@@ -5,6 +5,21 @@
 
 Source: [rtl/sad_engine.sv](rtl/sad_engine.sv). Standalone bench: [tb_sad_engine.sv](tests/rtl/tb_sad_engine.sv).
 
+## First, the story — no RTL yet
+
+Picture a conveyor bringing **already paired** left/right vertical columns for one chosen disparity. The first station measures the difference at every row and combines those differences into one column cost. The second station keeps the costs of the preceding columns in a circular ledger. Once that ledger has enough history, it adds the new cost to the preceding costs to produce one complete square-window SAD. Each station stamps its output with “valid,” so a skipped input does not accidentally become a real window. The second station is one registered step behind the first. At the end of a scanline, let all submitted columns leave both stations before wiping their state for the next scanline.
+
+The conveyor is **one fixed-disparity lane**. It does not fetch either image, choose the disparity, or decide which of 32 candidates wins. Its second station already includes the final window addition—there is no third arithmetic station in this wrapper.
+
+```mermaid
+flowchart LR
+  P["Aligned left/right vertical columns"] --> Q["Station 1: cost of each column"] --> R["Station 2: circular history and full-window SAD"] --> S["Window cost + validity"]
+  T["Reset / abort"] --> Q
+  T --> R
+```
+
+**Map for reading code:** station 1 → `u_column_sad`; the handoff stamp and cost → `column_valid`/`column_sum`; station 2 → `u_column_sum_buffer`; the final product → `valid_o`/`sad_o`. The source and detailed mapping follow.
+
 ## Complete source
 
 ```systemverilog
@@ -51,6 +66,33 @@ module sad_engine #(
 endmodule
 `default_nettype wire
 ```
+
+## Line-by-line mapping from conveyor story to RTL
+
+These are line numbers in [rtl/sad_engine.sv](rtl/sad_engine.sv), not Markdown line numbers. The wrapper contains no hidden state besides its two instantiated modules.
+
+| Source line(s) | What the statement does | Story / hardware mapping |
+|---|---|---|
+| 1–2 | Sets simulation precision and prevents implicit nets. | Catch wiring typos; neither directive adds a pipeline stage. |
+| 4–9 | States fixed alignment, no backpressure, edge latency, clear, and row-end drain contract. | Defines what arrives at the conveyor and when to empty it. |
+| 10–14 | Declares module and compile-time K/pixel/column/window widths. | Configures both stations for the *same* window dimensions. The final score needs room for all K×K differences. |
+| 15–20 | Declares clock, reset, clear and the input-valid signal. | Both stations share one clock and one abort; `valid_i` marks a real incoming paired column. |
+| 21–22 | Declares packed left/right vertical-column inputs. | The upstream aligner—not this wrapper—must deliver corresponding rows at one fixed disparity. |
+| 23–24 | Declares final valid flag and complete-window score. | A customer reads `sad_o` only when `valid_o` is asserted. |
+| 25 | Declares `column_valid`. | The stamp accompanying the *vertical-column cost* at the station handoff. |
+| 26 | Declares `column_sum` at `COL_W` width. | The first station's score—not yet the square window score. |
+| 28 | Instantiates `column_sad` with matching compile-time dimensions. | Physically builds the first station; it is not a function call executed on demand. |
+| 29 | Wires clock/reset/clear/input-valid into station 1. | A column is accepted only when valid and is discarded on a clear. |
+| 30 | Wires both aligned pixel buses. | Gives the difference desks corresponding left/right rows. |
+| 31–32 | Wires station 1's valid and score outputs; closes instance. | Carries the stamped vertical cost toward station 2. |
+| 34 | Documents that station 2 already performs the final addition. | Do **not** insert another `history + new` adder in this wrapper. |
+| 35 | Instantiates `column_sum_buffer` at the same K and widths. | Physically builds the second station: circular horizontal history. |
+| 36–37 | Wires shared clock/reset/clear into station 2. | Clearing both on one edge prevents an old-row column from repopulating a new-row tray. |
+| 38 | Wires `column_valid` and `column_sum` to its inputs. | A bubble from the first station cannot advance the circular tray. |
+| 39–40 | Wires the registered complete SAD and valid flag to the outer interface. | A result from station 2 is the wrapper's result; there is no third station. |
+| 41–42 | Ends the module and restores normal nettype. | No extra output register is inserted here. |
+
+**Trace an input:** the calculator registers its difference leaves when accepted at edge `t`; its root and `column_valid` appear after edge `t+$clog2(K)`. The second station sees those *new* registered wires at the next edge, `t+$clog2(K)+1`; only then can `sad_o` be valid if K−1 earlier column costs were accepted. Keep `valid_i=0` for `$clog2(K)+1` edges after a row's last input, and clear on a distinct subsequent edge so the final result is not aborted.
 
 ## Scope and connections
 

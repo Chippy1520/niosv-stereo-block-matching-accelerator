@@ -5,6 +5,19 @@
 
 Source: [rtl/column_sad.sv](rtl/column_sad.sv). Standalone bench: [tb_column_sad.sv](tests/rtl/tb_column_sad.sv).
 
+## First, the story — no RTL yet
+
+Imagine eleven pairs of students standing in a vertical line, one student holding a left-image gray value and the other holding the matching right-image gray value. Each pair measures **how different** its two numbers are, without caring which one is larger. All eleven pairs work simultaneously. They hand their differences to a set of collection desks: neighboring results are combined, then neighboring subtotals, until one desk holds the cost of this **one vertical column**. There are register checkpoints between desks, so several different columns can be in flight at once. A small companion marker follows each column through the same checkpoints; if no column arrives on a clock, that marker says “empty,” rather than stopping everyone already in the pipeline.
+
+This is **not** a whole 11×11 SAD result. Another module gathers costs from neighboring columns. Reset or clear empties all checkpoints, intentionally discarding unfinished work. The picture is the physical process the RTL below implements:
+
+```mermaid
+flowchart LR
+  A["11 aligned pairs of grayscale pixels"] --> B["11 parallel difference desks"] --> C["Registered leaves"] --> D["Pairwise subtotal desks<br/>registered at every level"] --> E["One column cost + valid marker"]
+```
+
+**Map for reading code:** “pair” → a generated leaf `j`; “difference desk” → comparison and subtraction; “checkpoint” → `difference_reg` or `sum_reg`; “collection desks” → `tree`; “marker” → `valid_pipe`; “empty the desks” → `rst_n`/`clear_i`. The exact behavior and line-by-line mapping follow the source snapshot.
+
 ## Complete source
 
 ```systemverilog
@@ -90,6 +103,38 @@ module column_sad #(
 endmodule
 `default_nettype wire
 ```
+
+## Line-by-line mapping from the story to hardware
+
+Line numbers are from [rtl/column_sad.sv](rtl/column_sad.sv), not the position within this Markdown file. The full source block above remains an exact snapshot.
+
+| Source line(s) | What the line actually does | Story / hardware mapping |
+|---|---|---|
+| 1–2 | Sets simulation units and forbids implicit nets. | A spelling mistake cannot create a phantom wire; neither directive adds a desk or a clock. |
+| 4–8 | Records the contract: one column, registered leaves and tree, moving bubbles, synchronous flush. | Defines what a completed collection means and when unfinished work is thrown away. |
+| 9–13 | Names the module, fixes `K`, `PIXEL_W`, and `COL_W` at elaboration, opens the port list. | Decides how many pair desks exist and how wide their combined score must be. |
+| 14–17 | Declares clock, synchronous active-low reset, clear, and input-valid. | Clock moves work; the validity stamp marks a real delivery; reset/clear empties all desks. |
+| 18–19 | Accepts two `K*PIXEL_W` packed columns. | Each desk gets one matching left/right grayscale pair. The upstream module chooses the disparity. |
+| 20–22 | Exposes a valid bit and a `COL_W`-wide score and ends the interface. | A customer must only read a score when its stamp is present. |
+| 23 | Calculates `$clog2(K)` registered tree levels. | The number of subtotal-desk rounds, four when K is eleven. |
+| 24 | Chooses the next power-of-two leaf count. | Makes a balanced bracket of desks; five zero placeholders for eleven real inputs. |
+| 25 | Allocates one valid register for the leaf stage and one per reduction level. | The stamp travels in step with the corresponding cost at each checkpoint. |
+| 26–27 | Describes and declares the level/node signal array at full column width. | Wires carry the leaf results and subtotals; this is not a stored image. |
+| 29–32 | On every clock, clears or samples `valid_pipe[0]`. | A new delivery gets its first stamp; an abort makes it invalid at this checkpoint. |
+| 34–37 | Declares Quartus-compatible generate indices and elaborates all leaves. | Builds parallel desks in hardware; a `for` generate does not serialize K pixel comparisons. |
+| 38–40 | For a real leaf, slices row `j` from *both* input buses. | Correctly matches the left/right students standing in the same image row. |
+| 41–42 | Compares the two unsigned values and subtracts smaller from larger. | The pair hands over a nonnegative absolute difference, whichever side was brighter. |
+| 43–48 | Declares the difference register; synchronous reset/clear zeros it, otherwise a valid input captures the zero-extended difference. | A register checkpoint holds the measured result; a bubble leaves its old bits in place but not a valid stamp. |
+| 49 | Connects the difference register to leaf `j` of the tree. | Places this pair's cost into the correct collection-desk position. |
+| 50–52 | Drives out-of-range leaves with constant zero. | Empty brackets cannot change the sum and need no incoming pixels. |
+| 54–58 | Builds each reduction level and clocks its valid bit from the preceding level, or clears it. | The stamp follows exactly one registered desk level per clock, including across bubbles. |
+| 59–65 | Builds each active node; on a valid preceding level, registers the sum of its two adjacent old nodes. | Two neighboring subtotals combine at once; nonblocking assignments keep different columns from mixing on one edge. |
+| 66–69 | Connects each sum register to its tree node and closes the generated tree. | The next desk receives that subtotal on the *following* edge. |
+| 71–72 | Assigns the final stage's stamp and root subtotal to output ports. | The score is meaningful only when its paired stamp is set. |
+| 74–79 | Simulation-only assertions reject invalid K/widths. | Catch an impossible desk count or an overflowing score width in a test; these checks are not datapath hardware. |
+| 80–81 | Closes the module and restores normal nettype. | No extra calculation occurs here. |
+
+**Follow one input through the code:** at acceptance edge `t`, lines 29–32 and 43–49 register the stamp and all differences. At each subsequent edge, lines 54–66 advance the stamp and subtotals together. At edge `t+$clog2(K)`, lines 71–72 expose the finished column cost. If a bubble is inserted, the data can hold while its stamp travels as zero. A clear overrides an input at *every* register stage.
 
 ## Job of this module
 

@@ -5,6 +5,21 @@
 
 Source: [rtl/circular_row_buffer.sv](rtl/circular_row_buffer.sv). Bench: [tb_circular_row_buffer.sv](tests/rtl/tb_circular_row_buffer.sv).
 
+## First, the story — no RTL yet
+
+Imagine a filing cabinet with eleven full-row drawers and a clerk walking across an image one pixel at a time. The clerk drops each new pixel into the drawer assigned to the current image row. At a given horizontal position, the cabinet still holds pixels from earlier rows at that same position. Once enough rows have arrived, the clerk reads the ten older pixels and adds the just-arrived pixel as the newest: that bundle is one **vertical column**. At the end of the image row, the clerk returns to the left edge and rotates to the next drawer. Eventually the drawers circle back and old rows are overwritten. An input pause leaves the clerk standing in place; an abort returns the clerk to the start and requires enough fresh rows before any bundle can be trusted again.
+
+This cabinet works for **one grayscale image only**. It neither pairs two images nor calculates differences or the SAD score. An end-of-output-row sign tells a future controller when to drain the downstream engine; the cabinet itself does not wait.
+
+```mermaid
+flowchart LR
+  P["One image pixel stream"] --> C["Clerk: x position and rotating row drawer"] --> M["Older rows at the same x"] --> V["Vertical column, oldest to newest"]
+  P --> N["Newest pixel bypass"] --> V
+  C --> R["Enough rows received?"] --> V
+```
+
+**Map for reading code:** drawer → `row_mem`; clerk position → `x`/`slot`; fresh-row count → `rows_filled`; newest bypass → `pixel_i`; resulting bundle → `column_o`; end-of-row sign → `row_last_o`. Below, every important statement is traced back to this picture.
+
 ## What this abstraction is
 
 One grayscale stream. Pixels arrive left to right, then the next row. The module keeps **K row slots in a ring** and, once those rows overlap, emits the vertical column at the current x.
@@ -109,6 +124,35 @@ module circular_row_buffer #(
 endmodule
 `default_nettype wire
 ```
+
+## Line-by-line mapping from filing-cabinet story to RTL
+
+Line numbers below refer to [rtl/circular_row_buffer.sv](rtl/circular_row_buffer.sv). The row buffer is a **separate** module from both the calculator and the column-sum history.
+
+| Source line(s) | What the statement does | Story / hardware mapping |
+|---|---|---|
+| 1–2 | Sets simulation precision and rejects implicit nets. | Time units and typo protection; neither creates a drawer. |
+| 4–11 | Specifies one-image raster order, oldest/newest packing, same-edge registered output, and downstream drain responsibility. | Defines the clerk's job and explicitly excludes disparity pairing and engine scheduling. |
+| 12–16 | Fixes K, pixel width and row width at elaboration; starts the port list. | Determines number of drawers, number of positions per drawer, and bits per pixel. |
+| 17–20 | Declares clock, synchronous active-low reset, clear and valid input. | The clerk moves only for an accepted pixel; abort resets the clerk's position. |
+| 21–25 | Declares input pixel, valid output, last-column marker and packed K-row column output. | One newly delivered card becomes the newest item of an emitted vertical bundle. |
+| 26 | Computes a nonzero-width x counter even for a one-pixel row. | The clerk always has a representable horizontal position. |
+| 27 | Computes a nonzero-width row slot even when K=1. | A one-drawer cabinet remains legal hardware. |
+| 28 | Sizes the number-of-completed-rows counter. | The clerk can represent the fully warmed-up state. |
+| 30–36 | Declares K×IMG_W storage, x, rotating slot, filled count; enables output after K−1 completed rows. | The cabinet holds previous rows; only after enough drawers have fresh rows can one complete bundle be emitted. |
+| 38–43 | Creates packed candidate column and one parallel tap per output row; latest tap takes `pixel_i`. | The current drawer still has an old row, so the just-delivered pixel bypasses storage. |
+| 44–51 | For an older tap, widens `slot+j+1`, conditionally subtracts K and reads the chosen drawer at x. | Walk around the circular drawers without a divider; all older pixels come from the **same horizontal position**. |
+| 52–54 | Closes the conditional tap and generated parallel loop. | The circuit has K simultaneous taps, not K successive pixel clocks. |
+| 56–64 | At a rising edge, reset/clear zeros cursor, filled count, output flags and output column. | Abort restarts the clerk; old drawer bits remain physically stored but are not trusted until fresh rows arrive. |
+| 65–67 | Defaults valid and end-of-row markers low; proceeds only for `valid_i`. | Pauses leave the cursor and ring unchanged; no ghost column is produced. |
+| 68 | Writes the current pixel to `row_mem[slot][x]`. | Replace one card in the current drawer; no bulk row copy occurs. |
+| 69–73 | When ready, registers valid, optional last-x flag and packed candidate column. | Deliver a complete vertical bundle after this edge; `row_last_o` marks only a valid output at row end. |
+| 74–82 | At the final x, wraps x, rotates slot (special-casing K=1), increments/saturates filled rows; otherwise increments x. | Finish the drawer's row, return left, rotate to the next drawer; stop counting once the cabinet is warm. |
+| 83–85 | Ends the pixel-accepting and sequential blocks. | With `valid_i=0`, none of that cursor movement or row write happens. |
+| 87–92 | Simulation-only guard rejects nonpositive dimensions. | Detect an impossible drawer layout during elaboration/testing without extra runtime circuitry. |
+| 93–94 | Closes the module and restores normal nettype. | No hidden pipeline register is added. |
+
+**Trace one pixel:** on an edge with `valid_i=1`, line 68 writes the pixel into the current drawer; line 43 simultaneously feeds it straight to the newest tap, while lines 44–51 select preceding rows *before* the write. Lines 69–73 register a complete column only after warmup. Lines 74–82 move x/slot for the next pixel. At a clear edge, lines 56–64 take priority over all of this; discarded pixels and previous frame rows cannot immediately generate valid output.
 
 ## Ports
 
