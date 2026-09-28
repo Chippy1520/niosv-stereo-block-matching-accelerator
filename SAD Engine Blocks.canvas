@@ -53,7 +53,7 @@
     {
       "id": "engine-note",
       "type": "text",
-      "text": "## Inside vs. outside the engine\n\nThe right-image pixel-column cache and disparity taps are OUTSIDE sad_engine. This internal column_sum_buffer stores SAD COSTS, not right-image pixels. A planned 32-lane bank repeats the entire boxed wrapper.",
+      "text": "## Inside vs. outside the engine\n\nThe right-image pixel-column cache and disparity taps are OUTSIDE sad_engine. This internal column_sum_buffer stores SAD COSTS, not right-image pixels. A planned P_LANES bank repeats the entire boxed wrapper.",
       "x": 490,
       "y": 735,
       "width": 990,
