@@ -1,170 +1,43 @@
 {
-  "nodes": [
-    {
-      "id": "legend",
-      "type": "text",
-      "text": "## Accelerator view · mostly planned\n\nOrange = proposed integration; the row-buffer *type* and one sad_engine are verified standalone RTL.\nThis is a design contract, not an integrated accelerator bitstream.\n[[Module Blocks.canvas|Back to system]]",
-      "x": -90,
-      "y": -490,
-      "width": 940,
-      "height": 290,
-      "color": "5"
-    },
-    {
-      "id": "control",
-      "type": "text",
-      "text": "## CSR + frame/pass controller · planned\n\nCPU CSRs: config/start/status + performance counters. Sequence rows and disparity groups; carry coordinate/valid tags; drain and clear at row boundaries. Backpressure/FIFOs needed at memory boundary.",
-      "x": 930,
-      "y": -490,
-      "width": 930,
-      "height": 290,
-      "color": "2"
-    },
-    {
-      "id": "transport",
-      "type": "text",
-      "text": "## SDRAM transport · planned\n\nAddress generator + Avalon-MM memory master + FIFOs. Read left/right frames and (for later groups) prior-best records from shared SDRAM. Same master also commits output writes; CPU does not stream each pixel through a CSR.",
-      "x": -80,
-      "y": 270,
-      "width": 420,
-      "height": 320,
-      "color": "2"
-    },
-    {
-      "id": "rows",
-      "type": "text",
-      "text": "## Two vertical row buffers\n\nLeft/right circular_row_buffer instances make K-row columns L[x], R[x]. The module type exists; paired wiring is planned.\n[[Stereo Frontend Blocks.canvas|Open row/tap detail]]",
-      "x": 515,
-      "y": 270,
-      "width": 410,
-      "height": 320,
-      "color": "2"
-    },
-    {
-      "id": "cache",
-      "type": "text",
-      "text": "## Column cache + disparity taps · planned\n\nRight shift history Q[d]=R[x−d] and matching left delay. Supply aligned columns + per-lane valid for active group.",
-      "x": 1085,
-      "y": 270,
-      "width": 440,
-      "height": 320,
-      "color": "2"
-    },
-    {
-      "id": "bank",
-      "type": "text",
-      "text": "## P_LANES parallel SAD engines · planned bank\n\nOne sad_engine per active disparity (single-lane RTL exists). Each produces a K×K cost + valid; no image memory inside.\n[[SAD Engine Blocks.canvas|Open one engine]]",
-      "x": 1690,
-      "y": 270,
-      "width": 450,
-      "height": 320,
-      "color": "2"
-    },
-    {
-      "id": "reducer",
-      "type": "text",
-      "text": "## Comparator tree · planned\n\nMinimum valid (cost,d) among parallel lanes for the SAME (x,y). Carry tags through pipeline; lower d wins ties.",
-      "x": 2310,
-      "y": 270,
-      "width": 430,
-      "height": 320,
-      "color": "2"
-    },
-    {
-      "id": "merge",
-      "type": "text",
-      "text": "## Cross-group best merge · planned\n\nIf D_MAX>P_LANES, compare this group winner with the prior best record read from shared SDRAM; retain the global winner across passes. If one group covers all d, bypass this step.",
-      "x": 2910,
-      "y": 270,
-      "width": 465,
-      "height": 320,
-      "color": "2"
-    },
-    {
-      "id": "writeback",
-      "type": "text",
-      "text": "## SDRAM result writeback · planned\n\nUpdated best for the next group, or final disparity map. Output FIFO/write acceptance and done are handled by the SAME transport/master at left.",
-      "x": 3520,
-      "y": 270,
-      "width": 425,
-      "height": 320,
-      "color": "2"
-    },
-    {
-      "id": "handoff",
-      "type": "text",
-      "text": "## One accepted-item convention\n\nMemory-side valid/ready + FIFOs absorb SDRAM stalls. Current row-buffer/engine RTL has valid only, NO ready: controller must pause paired pixels and preserve metadata or add an elastic boundary. Output done only after final write is accepted.",
-      "x": 980,
-      "y": 840,
-      "width": 1350,
-      "height": 215,
-      "color": "5"
-    }
-  ],
-  "edges": [
-    {
-      "id": "pixels",
-      "fromNode": "transport",
-      "toNode": "rows",
-      "fromSide": "right",
-      "toSide": "left",
-      "label": "paired pixel streams + (x,y), valid"
-    },
-    {
-      "id": "columns",
-      "fromNode": "rows",
-      "toNode": "cache",
-      "fromSide": "right",
-      "toSide": "left",
-      "label": "L[x], R[x] + valid"
-    },
-    {
-      "id": "pairs",
-      "fromNode": "cache",
-      "toNode": "bank",
-      "fromSide": "right",
-      "toSide": "left",
-      "label": "aligned tap per d + valid"
-    },
-    {
-      "id": "costs",
-      "fromNode": "bank",
-      "toNode": "reducer",
-      "fromSide": "right",
-      "toSide": "left",
-      "label": "cost, d, valid, (x,y)"
-    },
-    {
-      "id": "group-winner",
-      "fromNode": "reducer",
-      "toNode": "merge",
-      "fromSide": "right",
-      "toSide": "left",
-      "label": "minimum for this group"
-    },
-    {
-      "id": "output-write",
-      "fromNode": "merge",
-      "toNode": "writeback",
-      "fromSide": "right",
-      "toSide": "left",
-      "label": "updated / final (cost,d,x,y)"
-    },
-    {
-      "id": "setup-transport",
-      "fromNode": "control",
-      "toNode": "transport",
-      "fromSide": "left",
-      "toSide": "top",
-      "label": "addresses / backpressure sequencing"
-    },
-    {
-      "id": "setup-bank",
-      "fromNode": "control",
-      "toNode": "bank",
-      "fromSide": "bottom",
-      "toSide": "top",
-      "label": "group base, row clear, tags"
-    }
-  ]
+	"nodes":[
+		{"id":"bank-group","type":"group","x":170,"y":1270,"width":2030,"height":405,"color":"2","label":"32 PARALLEL SAD ENGINES · illustrative single-pass bank (replication planned)"},
+		{"id":"input","type":"text","text":"## Paired frame reader · planned\n\nSDRAM → rectified L/R pixels, (x,y), valid.\n[[Module Blocks.canvas|System context]]","x":930,"y":-50,"width":500,"height":205,"color":"6"},
+		{"id":"left-row","type":"text","text":"## Left circular row buffer\n\nK-row ring → vertical column L[x]. Module RTL exists; stereo wiring planned.","x":180,"y":220,"width":600,"height":205,"color":"4"},
+		{"id":"right-row","type":"text","text":"## Right circular row buffer\n\nSame module, second instance → vertical column R[x]. Stereo wiring planned.","x":1580,"y":220,"width":600,"height":205,"color":"4"},
+		{"id":"controller","type":"text","text":"## Controller · planned\n\nPair streams; track (x,y) and valid; drain/clear rows. CSR start/status.","x":970,"y":310,"width":420,"height":210,"color":"2"},
+		{"id":"right-cache","type":"text","text":"## Right column shift register · planned\n\n32 K-pixel column positions in this example: Q[d]=R[x−d], d=0…31. Mask invalid taps.","x":1580,"y":590,"width":600,"height":220,"color":"2"},
+		{"id":"engine-0","type":"text","text":"## Engine 0\n\nL[x] vs Q[0] → SAD(0)\n[[SAD Engine Blocks.canvas|Inside one engine]]","x":235,"y":1365,"width":340,"height":210,"color":"4"},
+		{"id":"engine-1","type":"text","text":"## Engine 1\n\nL[x] vs Q[1] → SAD(1)","x":650,"y":1365,"width":340,"height":210,"color":"4"},
+		{"id":"engine-2","type":"text","text":"## Engine 2\n\nL[x] vs Q[2] → SAD(2)","x":1065,"y":1365,"width":340,"height":210,"color":"4"},
+		{"id":"more-engines","type":"text","text":"## ...\n\nEngines 3–30","x":1450,"y":1400,"width":190,"height":140,"color":"5"},
+		{"id":"engine-31","type":"text","text":"## Engine 31\n\nL[x] vs Q[31] → SAD(31)","x":1765,"y":1365,"width":340,"height":210,"color":"4"},
+		{"id":"tree","type":"text","text":"## Comparator tree · planned\n\nMinimum valid (SAD, d) at the same (x,y). Tie: lower d.","x":690,"y":1815,"width":980,"height":200,"color":"2"},
+		{"id":"output","type":"text","text":"## Disparity result → SDRAM · planned\n\n(d*, SAD*, x, y, valid) to output FIFO. If P_LANES<32, merge best across passes before writeback.","x":875,"y":2155,"width":610,"height":200,"color":"6"},
+		{"id":"left-delay","type":"text","text":"## Left column delay · planned\n\nOne K-pixel column register (11 pixels by default); delay L[x] one clock to match the right cache.","x":180,"y":520,"width":600,"height":220,"color":"2"},
+		{"id":"fanout","type":"text","text":"## Left-column fan-out · planned\n\nBroadcast delayed L[x] to all 32 engines. Carry valid and (x,y); right taps bypass this block.","x":220,"y":880,"width":520,"height":180,"color":"5"}
+	],
+	"edges":[
+		{"id":"pixel-left","fromNode":"input","fromSide":"left","toNode":"left-row","toSide":"top","label":"left pixels"},
+		{"id":"pixel-right","fromNode":"input","fromSide":"right","toNode":"right-row","toSide":"top","label":"right pixels"},
+		{"id":"control-left","fromNode":"controller","fromSide":"left","toNode":"left-row","toSide":"right","label":"paired valid / row control"},
+		{"id":"control-right","fromNode":"controller","fromSide":"right","toNode":"right-row","toSide":"left","label":"paired valid / row control"},
+		{"id":"left-column","fromNode":"left-row","fromSide":"bottom","toNode":"left-delay","toSide":"top","label":"L[x] · K pixels"},
+		{"id":"right-column","fromNode":"right-row","fromSide":"bottom","toNode":"right-cache","toSide":"top","label":"R[x] · K pixels"},
+		{"id":"left-to-fanout","fromNode":"left-delay","fromSide":"bottom","toNode":"fanout","toSide":"top","color":"5","label":"delayed L[x]"},
+		{"id":"control-fanout","fromNode":"controller","fromSide":"bottom","toNode":"fanout","toSide":"right","label":"aligned valid / (x,y)"},
+		{"id":"fanout-0","fromNode":"fanout","fromSide":"bottom","toNode":"engine-0","toSide":"top","color":"5","label":"L[x] broadcast"},
+		{"id":"fanout-1","fromNode":"fanout","fromSide":"bottom","toNode":"engine-1","toSide":"top","color":"5","label":"L[x] broadcast"},
+		{"id":"fanout-2","fromNode":"fanout","fromSide":"bottom","toNode":"engine-2","toSide":"top","color":"5","label":"L[x] broadcast"},
+		{"id":"fanout-31","fromNode":"fanout","fromSide":"bottom","toNode":"engine-31","toSide":"top","color":"5","label":"L[x] broadcast"},
+		{"id":"sad-0","fromNode":"engine-0","fromSide":"bottom","toNode":"tree","toSide":"top","label":"SAD(0), d=0"},
+		{"id":"sad-1","fromNode":"engine-1","fromSide":"bottom","toNode":"tree","toSide":"top","label":"SAD(1), d=1"},
+		{"id":"sad-2","fromNode":"engine-2","fromSide":"bottom","toNode":"tree","toSide":"top","label":"SAD(2), d=2"},
+		{"id":"sad-31","fromNode":"engine-31","fromSide":"bottom","toNode":"tree","toSide":"top","label":"SAD(31), d=31"},
+		{"id":"disparity","fromNode":"tree","fromSide":"bottom","toNode":"output","toSide":"top","label":"winning (SAD*,d*) + coordinate"},
+		{"id":"control-cache","fromNode":"controller","fromSide":"right","toNode":"right-cache","toSide":"left","label":"row reset / tap-valid"},
+		{"id":"tap-0","fromNode":"right-cache","fromSide":"bottom","toNode":"engine-0","toSide":"top","color":"1","label":"Q[0], valid(0)"},
+		{"id":"tap-1","fromNode":"right-cache","fromSide":"bottom","toNode":"engine-1","toSide":"top","color":"1","label":"Q[1], valid(1)"},
+		{"id":"tap-2","fromNode":"right-cache","fromSide":"bottom","toNode":"engine-2","toSide":"top","color":"1","label":"Q[2], valid(2)"},
+		{"id":"tap-31","fromNode":"right-cache","fromSide":"bottom","toNode":"engine-31","toSide":"top","color":"1","label":"Q[31], valid(31)"}
+	]
 }
