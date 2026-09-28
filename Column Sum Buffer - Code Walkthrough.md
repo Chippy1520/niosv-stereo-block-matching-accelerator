@@ -661,6 +661,35 @@ The module implements horizontal column reuse for a fixed-size, single-disparity
 
 The column calculator, one integrated lane and the [[Circular Row Buffer]] abstraction are now implemented. See [[Pipelined Column SAD Calculator]], [[Single SAD Engine]], [[Module Blocks.canvas]] and [[Testbench Guide]]. Remaining stages include disparity alignment, the parallel engine bank, and comparator integration.
 
+## Diagram: circular *column-sum* history (not the image row ring)
+
+```mermaid
+flowchart LR
+  IN["One valid vertical cost C<br/>from column_sad"] --> FULL{"Previous K−1<br/>costs present?"}
+  FULL -->|"yes"| OUT["Register SAD = H + C<br/>valid_o = 1"]
+  FULL -->|"no: warmup"| WAIT["valid_o = 0"]
+  HIST["Ring of K−1 column costs<br/>wr_ptr selects oldest when full"] --> OLD["Oldest cost O"]
+  OLD --> UPDATE["Next H = H − O + C"]
+  IN --> HIST
+  IN --> UPDATE
+  UPDATE --> HS["history_sum H register"]
+  HS --> OUT
+  CLEAR["rst_n or clear_i"] -->|"invalidate history and output"| HIST
+```
+
+The feedback in this diagram is combinational `H − O + C` between registers—not an additional pipelined adder. During warmup the evicted cost is treated as zero. When the ring fills, the oldest is evicted on every *valid* input. `clear_i` resets pointer, count, running total, and output but does not erase every RAM entry; old data is gated off until repopulated. Compare [[Circular Row Buffer]] for the separate pixel-row store.
+
+```text
+K=3 example: history has two slots; columns arrive C0, C1, C2, C3.
+Accept C0: history=[C0]       H=C0            output invalid
+Accept C1: history=[C0,C1]    H=C0+C1         output invalid
+Accept C2: output=C0+C1+C2;   evict C0; H=C1+C2
+Accept C3: output=C1+C2+C3;   evict C1; H=C2+C3
+Bubble:    pointer and H hold; output valid falls, old sad_o holds
+```
+
+The output for `C2` uses the **old** `history_sum` at that edge; the recurrence simultaneously prepares the next history via nonblocking assignments.
+
 ## Related notes
 
 - [[Column Sum Buffer]] — implementation overview and bit widths.

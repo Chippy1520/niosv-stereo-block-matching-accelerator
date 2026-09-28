@@ -117,3 +117,86 @@ python scripts/run_tests.py --suite engine --case 11:8 --seed 12345 --random-cyc
 ```
 
 Open **Stereo_SAD_Engine.qpf** for component synthesis. The original **Stereo_SAD.qpf** remains the buffer-only project. See [[Hardware Integration]] for synthesis results and limitations.
+
+## Code walkthrough: how the wrapper makes a complete window
+
+This section explains the exact [rtl/sad_engine.sv](rtl/sad_engine.sv) snapshot above. It is intentionally one wrapper: **no extra adder or comparator is hiding between the two instances**.
+
+### Header, parameters and ports (lines 1–24)
+
+| Code | Why it is here |
+|---|---|
+| `` `timescale 1ns/1ps `` and `` `default_nettype none `` | Set simulation precision and reject accidental implicit nets; restore default net type after the module. Neither is a pipeline stage. |
+| `K=11`, `PIXEL_W=8` | Compile-time kernel side and pixel width; all connections agree on them. These are not runtime Nios V settings. |
+| `COL_W = PIXEL_W + $clog2(K)` | Vertical cost width. For the defaults, the largest column cost is 2805, needing 12 bits. |
+| `SAD_W = PIXEL_W + $clog2(K*K)` | Complete window cost width. With 11×11 8-bit pixels, the largest possible SAD is 30855, needing 15 bits. |
+| `valid_i` plus packed columns | One already-aligned pair of vertical K-pixel columns is offered per asserted input edge. The engine does not fetch image pixels. |
+| `valid_o` and `sad_o` | The full K×K window result and its validity; the consumer must ignore `sad_o` when invalid. |
+
+### First connection: column calculator (lines 25–32)
+
+```systemverilog
+wire column_valid;
+wire [COL_W-1:0] column_sum;
+column_sad #(.K(K), .PIXEL_W(PIXEL_W), .COL_W(COL_W)) u_column_sad (
+    .clk(clk), .rst_n(rst_n), .clear_i(clear_i), .valid_i(valid_i),
+    .left_column_i(left_column_i), .right_column_i(right_column_i),
+    .valid_o(column_valid), .column_sum_o(column_sum)
+);
+```
+
+`column_valid` and `column_sum` are **internal wires**, not two extra registers. Named port connections keep data, validity, clock, reset, and clear paired. `column_sad` takes K parallel absolute differences, then reduces them through its registered tree. In particular `column_valid` becomes true after edge `t+$clog2(K)` for input accepted at `t`; see [[Pipelined Column SAD Calculator]].
+
+### Second connection: circular column history (lines 34–42)
+
+```systemverilog
+column_sum_buffer #(.K(K), .PIXEL_W(PIXEL_W), .COL_W(COL_W), .SAD_W(SAD_W))
+u_column_sum_buffer (
+    .clk(clk), .rst_n(rst_n), .clear_i(clear_i),
+    .valid_i(column_valid), .column_sum_i(column_sum),
+    .valid_o(valid_o), .sad_o(sad_o)
+);
+```
+
+The buffer accepts `column_sum` **only when** `column_valid=1`. It keeps a circular history of the preceding K−1 accepted column sums. When full, it registers `history_sum + new_column` as `sad_o`; in that same edge, it evicts the oldest history entry and updates the history for the *next* input. Thus the buffer already implements the proposed final adder. No duplicate window addition belongs in this wrapper. A bubble in the calculator does not write the history.
+
+The synchronous `rst_n` and `clear_i` go to **both** instances so a clear flushes in-flight calculator data and the buffer's previous-row history on the same edge. There is no `ready_o`, clock-domain crossing, multi-lane comparator, or disparity index here.
+
+### Diagram: one fixed-disparity lane
+
+```mermaid
+flowchart LR
+  SRC["Upstream alignment<br/>K left + K right pixels<br/>same fixed disparity"] -->|"left_column_i, right_column_i, valid_i"| COL["column_sad<br/>parallel abs + registered tree"]
+  COL -->|"column_sum, column_valid"| HIST["column_sum_buffer<br/>K−1 history + running sum<br/>final registered SAD"]
+  HIST -->|"sad_o, valid_o"| SINK["Consumer / eventual comparator bank"]
+  CTRL["clk, rst_n, clear_i"] --> COL
+  CTRL --> HIST
+```
+
+The upstream alignment and eventual comparator are **not part of this engine**. For 32 disparities, 32 such lanes and a comparator with aligned tags would be a later integration milestone, not something this diagram claims is built.
+
+### Diagram: why the extra cycle matters (`K=11`)
+
+```text
+Edge                t        t+1      t+2      t+3      t+4      t+5
+Accepted column C   abs      add1     add2     add3     add4     buffer
+column_valid        0        0        0        0        C        next
+engine valid_o      0        0        0        0        0        C if warm
+```
+
+This timeline assumes the pipeline was empty before C. `C` in a valid row means the signal is asserted **for C**, not that the valid wire stores a pixel value. At `t+4`, the buffer still sees the *previous* calculator registers because both modules clock on the same edge. At `t+5`, the buffer sees C's valid sum and produces a window result if it already had K−1 accepted sums. Bubbles change the number of **accepted** columns in history, not this edge-to-edge pipeline delay.
+
+### Diagram: warmup and row end
+
+```text
+Accepted columns in one row:  C0 C1 ... C9 C10 C11 ...
+Buffer before C10:           [C0 C1 ... C9]  (10 retained)
+At C10's buffer edge:        sad = C0 + ... + C10; then evict C0
+At C11's buffer edge:        sad = C1 + ... + C11; then evict C1
+Final raw input edge t:      valid_i=1
+Next 5 edges (K=11):        valid_i=0; allow last sum to leave buffer
+Following separate edge:    clear_i=1; invalidate both modules
+Next edge:                  begin the next row
+```
+
+`C0` through `C11` here denote **computed vertical costs**, not image pixels. If the row had fewer than K accepted columns, no complete horizontal window is valid. The `clear_i` edge is separate from the drain because clear has priority and would suppress a result due on that edge.

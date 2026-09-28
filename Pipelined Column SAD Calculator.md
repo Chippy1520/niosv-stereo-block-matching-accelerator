@@ -137,3 +137,102 @@ python scripts/run_tests.py --suite column --case 11:8 --vcd
 ```
 
 See [[Timing and Pipelining]] for integration timing and [[Verification]] for actual run evidence. Quartus Lite 22.1 requires the separately declared `genvar` style used here; inline `for (genvar ...)` was rejected by the installed parser.
+
+## Read the RTL alongside the reason for each line
+
+The numbered ranges below refer to [rtl/column_sad.sv](rtl/column_sad.sv), whose complete, checked snapshot is at the top of this note. These explanations cover the behavior of the actual code—not a different implementation.
+
+### Interface and widths (lines 1–22)
+
+| Code | Why it is here |
+|---|---|
+| `` `timescale 1ns/1ps `` | Defines simulation time unit and precision; not the FPGA clock rate. |
+| `` `default_nettype none `` | Makes a misspelled wire an error rather than an implicit net; the last line restores the default for other source files. |
+| `parameter integer K = 11` | Compile-time number of vertical pixel pairs. Changing `K` elaborates different hardware; it is not a Nios V register. |
+| `PIXEL_W = 8` | Each grayscale pixel is an unsigned 8-bit value by default. |
+| `COL_W = PIXEL_W + $clog2(K)` | Enough bits for the *sum* of `K` pixel differences. With the defaults, the maximum is `11×255 = 2805`, which fits in 12 bits. |
+| `clk`, `rst_n`, `clear_i`, `valid_i` | Rising-edge clock, synchronous active-low reset, synchronous abort/flush, and input acceptance indicator. There is no `ready` handshake. |
+| `left_column_i`, `right_column_i` | Packed buses of `K` pixels each; pair row `j` from both buses before taking its absolute difference. |
+| `valid_o`, `column_sum_o` | A valid bit and its associated *vertical column* cost—not an 11×11 window result. |
+
+### Elaborated tree and leaf register (lines 23–53)
+
+```systemverilog
+localparam integer LEVELS = $clog2(K);
+localparam integer LEAVES = 2**LEVELS;
+logic [LEVELS:0] valid_pipe;
+wire [COL_W-1:0] tree [0:LEVELS][0:LEAVES-1];
+```
+
+`LEVELS` is the number of *registered addition levels*; `LEAVES` pads the tree to a power of two. For `K=11`, they are 4 and 16. The tree is a network of signals and registers, **not** an 11-row memory. `valid_pipe[0]` belongs to the leaf register stage and the later entries belong to the add stages. Only the needed nodes of each later level are instantiated.
+
+```systemverilog
+if (!rst_n || clear_i) valid_pipe[0] <= 1'b0;
+else valid_pipe[0] <= valid_i;
+```
+
+On an accepting edge, the first valid register records whether the leaf data is meaningful. Clearing also clears validity, so stale sums cannot be mistaken for new output. Every register assignment is nonblocking (`<=`): all stages sample the **old** preceding-stage values on an edge.
+
+```systemverilog
+wire [PIXEL_W-1:0] left_pixel = left_column_i[j*PIXEL_W +: PIXEL_W];
+wire [PIXEL_W-1:0] right_pixel = right_column_i[j*PIXEL_W +: PIXEL_W];
+wire [PIXEL_W-1:0] difference = (left_pixel >= right_pixel)
+    ? left_pixel - right_pixel : right_pixel - left_pixel;
+```
+
+The generated `j` selects row `j` from both packed columns (`+:` means a fixed-width slice starting at that bit). Comparison chooses the nonnegative subtraction, so no signed interpretation or negative difference escapes this stage. The generate loop creates **K parallel comparators/subtractors**, not a loop that executes for K clock cycles.
+
+```systemverilog
+if (!rst_n || clear_i) difference_reg <= '0;
+else if (valid_i)
+    difference_reg <= {{(COL_W-PIXEL_W){1'b0}}, difference};
+assign tree[0][j] = difference_reg;
+```
+
+At the same accepting edge, each absolute difference is registered and zero-extended to the column-sum width. The enable holds leaf data on a bubble; the valid bit says the held data is not a new column. For `j >= K`, the `g_padding` branch drives **constant zero** leaves; those do not consume incoming pixels. Parameter guards near the end reject widths that would make this extension invalid.
+
+### Reduction and output (lines 54–81)
+
+```systemverilog
+else valid_pipe[level] <= valid_pipe[level-1];
+...
+else if (valid_pipe[level-1])
+    sum_reg <= tree[level-1][2*node] + tree[level-1][2*node+1];
+```
+
+Each generated level pairs neighboring values from the *previous* registered level and registers their sum. There is one register boundary per level, which limits the combinational addition depth of any one stage. A bubble shifts through `valid_pipe` every clock, while each sum register holds its prior value when its input stage is invalid. Therefore a bubble does **not** stop a valid column behind or ahead of it.
+
+```systemverilog
+assign valid_o = valid_pipe[LEVELS];
+assign column_sum_o = tree[LEVELS][0];
+```
+
+The final valid bit describes the root sum. Ignore `column_sum_o` when `valid_o=0`: it may simply be the held value from an earlier column. For `K=1`, `LEVELS=0`, so the leaf itself is the output and there are no reduction stages. The simulation-only `initial` checks verify legal positive parameters and sufficient `COL_W`; they do not add runtime hardware.
+
+### Diagram: eleven pixel pairs become one column cost
+
+```mermaid
+flowchart LR
+  IN["11 aligned left/right pixel pairs<br/>row j on both packed buses"] --> ABS["11 parallel absolute differences<br/>register leaves at edge t"]
+  ABS --> PAD["Pad with 5 zero leaves<br/>16 positions total"]
+  PAD --> L1["Level 1: 8 pair sums<br/>registered"]
+  L1 --> L2["Level 2: 4 sums<br/>registered"]
+  L2 --> L3["Level 3: 2 sums<br/>registered"]
+  L3 --> L4["Level 4: 1 column sum<br/>registered"]
+  L4 --> OUT["column_sum_o + valid_o<br/>after edge t+4"]
+  VI["valid_i"] --> VP["valid_pipe[0..4]<br/>same register boundaries"] --> OUT
+```
+
+The padding is an elaboration-time constant; the diagram does **not** mean the module spends a cycle loading zeros. For a particular row `j`, the mathematical leaf is `|left[j] − right[j]|`. The root is the sum of those eleven leaves.
+
+### Diagram: edge timing and a bubble (`K=11`)
+
+```text
+Rising edge             t       t+1     t+2     t+3     t+4     t+5     t+6
+Column A, accepted      abs     add1    add2    add3    add4    → engine buffer
+Bubble at t+1                   —       —       —       —       invalid
+Column B, accepted t+2                  abs     add1    add2    add3    add4
+Calculator valid_o      0       0       0       0       A       0       B
+```
+
+Here `add4` at `t+4` is the calculator's registered output. The timeline assumes an empty pipeline before A; `A` and `B` in the final row mean `valid_o=1` for those respective columns. `→ engine buffer` is a **different module's** next-edge capture, not an extra register in this calculator. The bubble at `t+1` creates an invalid output after `t+5`; it does not pause A or B.

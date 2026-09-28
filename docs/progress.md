@@ -1,5 +1,11 @@
 # Progress log
 
+## Current documentation milestone — calculator, engine, and both circular buffers
+
+- [x] Add code-adjacent explanations and Obsidian-rendered diagrams to [[Pipelined Column SAD Calculator]], [[Single SAD Engine]], [[Circular Row Buffer]], and [[Column Sum Buffer - Code Walkthrough]].
+- [x] Distinguish the image-row ring from the per-engine column-history ring; document valid/bubble propagation, warmup, row drain, and stage boundaries.
+- [x] Verify embedded RTL snapshots, the complete simulation regression, and deliberate-fault detection. This is documentation only; no new board/timing claim.
+
 ## Current milestone — circular row buffer
 
 - [x] Implement `rtl/circular_row_buffer.sv`: one raster image, a ring of K rows, registered vertical column.
