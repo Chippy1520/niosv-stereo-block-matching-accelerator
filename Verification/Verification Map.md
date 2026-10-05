@@ -9,4 +9,5 @@
 - [[Left Column Delay]] — exact RTL, before/after-edge checks and component synthesis.
 - [[Column Pairing Verification]] — local delay/cache integration, not a complete frontend.
 - [[Hands-on Testbench Lab]] — practical bench-writing route and individually exercised modules.
+- [[Datapath Study Guide]] — module-by-module implementation and test contracts, independent references and runnable seven-module worked examples.
 - Future RTL follows `AGENTS.md`: source + code-adjacent walkthrough + bench in the same milestone, checked in CI.

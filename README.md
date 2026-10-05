@@ -20,12 +20,14 @@ SystemVerilog stereo SAD accelerator under incremental development for the **Ter
 - Default right-shift component (K=11, 8-bit pixels, 32 taps) Analysis & Synthesis passed with **zero errors, zero warnings and 2883 logic cells before fitting**. Its wide tap bus is internal wiring, not a board pinout.
 - Matching left delay Analysis & Synthesis passed with **zero errors, zero warnings and 90 logic cells before fitting**.
 - A hands-on bench-writing guide and Questa/ModelSim macro are included; the beginner lab and eight selected component/pairing directed simulations were actually run in Questa Intel Starter Edition 2021.2.
+- A consolidated datapath study guide links every exact-code walkthrough and covers packing/widths, stored state, warmup, clock timing, independent scoreboards and integration limits. `python scripts/run_testbench_lab.py --examples` additionally runs a seven-module teaching bench with 40 checked stimulus edges; it is not an integrated accelerator or 40 extra regression configurations.
 - Linked architecture notes, an Obsidian canvas, and a complete line-by-line RTL walkthrough.
 
 **Not implemented here yet:** disparity alignment between the two row buffers and the engine, the 32-lane wrapper and its comparator wiring, cross-group best merge, runtime kernel configuration, Nios V/Avalon integration, or a board-ready bitstream. Prior notes record a separately demonstrated Nios V Hello World; its working board project is not included here.
 
 ## Start here
 
+- **[Datapath study guide — every implemented module, how it works and what to test](Accelerator/Datapath%20Study%20Guide.md)**
 - [Project dashboard](Home.md)
 - [Complete code and line-by-line explanation](Accelerator/Engine/Column%20Sum%20Buffer%20-%20Code%20Walkthrough.md)
 - [Pipelined column calculator: code and explanation](Accelerator/Engine/Pipelined%20Column%20SAD%20Calculator.md)

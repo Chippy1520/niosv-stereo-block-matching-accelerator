@@ -11,6 +11,7 @@
 - `tests/rtl/tb_left_column_delay.sv`: whole-column hold/valid, synchronous control priority, before/after-edge checks.
 - `tests/rtl/tb_column_pairing.sv`: local delay/cache integration, independent accepted-column history and next-edge consumer observations.
 - `tests/lab/tb_delay_lab.sv`: small seven-beat teaching baseline; separate from the production regression.
+- `tests/lab/tb_datapath_examples.sv`: fixed small lesson vectors for all seven implemented modules, with 40 checked stimulus edges; independent experiments, not a frontend/bank/top wrapper.
 
 Run from the repository root:
 
@@ -24,11 +25,14 @@ python scripts/run_tests.py --suite comparator --case 32:15 --vcd
 python scripts/run_tests.py --suite shift --case 11:8:32 --vcd
 python scripts/check_test_sensitivity.py
 python scripts/run_testbench_lab.py --check-faults
+python scripts/run_testbench_lab.py --check-faults --examples
 python scripts/run_tests.py --suite delay --case 3:8 --vcd
 python scripts/run_tests.py --suite pairing --case 3:8:3 --vcd
 ```
 
 Start [Hands-on Testbench Lab](../Verification/Hands-on%20Testbench%20Lab.md) to write your own bench in Questa/ModelSim; `scripts/questa_lab.do` runs each existing part separately. See [Testbench Guide](../Verification/Testbench%20Guide.md) for regression commands and matrices. Seven component benches and a pairing integration bench run 64 SV configurations plus six legacy cases = 70 cases; the seven-beat teaching lab runs separately. `scripts/run_buffer_vectors.py` preserves the Python/deque reference. Every new functional RTL module needs a source walkthrough and standalone bench, checked by `scripts/check_walkthrough.py`.
+
+Read [Datapath Study Guide](../Accelerator/Datapath%20Study%20Guide.md) for implementation, timing, independent references and per-module test plans. In Questa, `set part examples` followed by `do "$root/scripts/questa_lab.do"` runs the small worked traces and leaves recursive waves open. The Icarus helper preserves `build/lab/datapath_examples.log` and `build/lab/datapath_examples.vcd` separately from the beginner waveform.
 
 ## Future system-level tests (not covered by the current lane)
 

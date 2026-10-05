@@ -20,12 +20,15 @@ Assumption: grayscale pixels are 8-bit, image width 640 and height 480; confirm 
 - [x] Implement and verify [[Right Column Shift Register]] as a standalone whole-column cache.
 - [x] Implement [[Left Column Delay]] and verify local [[Column Pairing Verification|left/right pairing]].
 - [x] Prepare [[Hands-on Testbench Lab]] with runnable beginner bench and tested Questa commands.
+- [x] Prepare [[Datapath Study Guide]]: implementation, widths, edge timing and independent test plans for every implemented datapath module, with runnable small examples.
 - [ ] Work through the hands-on individual-part sessions before the new top-level wrapper.
 - [ ] Disparity alignment, then connect the row buffers to [[Single SAD Engine]].
 - [ ] Implement [[Disparity Bank]] and connect its aligned lanes to [[Minimum Comparator Tree]].
 - [ ] Integrate [[Nios V Interface]] and board system.
 
 ## Navigate
+**[[Datapath Study Guide|Study every datapath module: implementation → timing → tests]]**
+
 [GitHub repository](https://github.com/Chippy1520/niosv-stereo-block-matching-accelerator) · [[docs/github-workflow|Update workflow]]
 
 **Graph spine:** [[System Architecture]] → [[Accelerator Architecture]] → [[Stereo Frontend]] / [[SAD Engine Architecture]] → [[Verification Map]]. These links create the hierarchy in Obsidian Graph; folders alone do not.

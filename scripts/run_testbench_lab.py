@@ -1,4 +1,4 @@
-"""Run the small teaching bench; optionally prove it catches two DUT faults.
+"""Run teaching benches; optionally check faults and seven-module worked examples.
 
 Outputs and mutated copies stay in build/lab/. Production RTL is never edited.
 """
@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check-faults', action='store_true')
+    parser.add_argument('--examples', action='store_true', help='Run independent fixed-size datapath lessons.')
     args = parser.parse_args()
     os.environ['PATH'] = str(ROOT / 'tools/mingw64/bin') + os.pathsep + os.environ['PATH']
     compiler, runtime = shutil.which('iverilog'), shutil.which('vvp')
@@ -58,6 +59,28 @@ def main():
             if code == 0 or 'LAB beat=' not in output:
                 raise SystemExit(f'Fault not caught by teaching scoreboard: {label}\n{output}')
             print(f'PASS teaching sensitivity: {label} compiled and was rejected')
+    if args.examples:
+        names = ['circular_row_buffer', 'left_column_delay', 'right_column_shift',
+                 'column_sad', 'column_sum_buffer', 'sad_engine', 'comparator_tree']
+        sources = [ROOT / 'rtl' / f'{name}.sv' for name in names]
+        snapshots = {path: path.read_bytes() for path in sources}
+        image = work / 'datapath_examples.vvp'
+        result = subprocess.run([compiler, '-g2012', '-Wall', '-s', 'tb_datapath_examples',
+                                 '-o', str(image), *map(str, sources),
+                                 str(ROOT / 'tests/lab/tb_datapath_examples.sv')],
+                                cwd=work, text=True, capture_output=True, timeout=60)
+        if result.returncode:
+            raise SystemExit('Datapath examples compilation failed:\n' + result.stderr)
+        result = subprocess.run([runtime, str(image), '+VCD'], cwd=work,
+                                text=True, capture_output=True, timeout=60)
+        output = result.stdout + result.stderr
+        (work / 'datapath_examples.log').write_text(output, encoding='utf-8')
+        print(output, end='')
+        if result.returncode or 'PASS datapath examples: seven modules,' not in output:
+            raise SystemExit('Datapath examples scoreboard failed.')
+        shutil.copyfile(work / 'waveform.vcd', work / 'datapath_examples.vcd')
+        if any(path.read_bytes() != data for path, data in snapshots.items()):
+            raise SystemExit('Production RTL changed during examples run.')
     if rtl.read_bytes() != original:
         raise SystemExit('Production RTL changed during lab run.')
     print('PASS hands-on lab; real RTL unchanged; good waveform: build/lab/reference.vcd')

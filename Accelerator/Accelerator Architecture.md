@@ -9,3 +9,4 @@
 - [[Minimum Comparator Tree]] → [[Minimum Comparator Tree - Code Walkthrough]] — standalone candidate-reduction RTL; bank hookup remains planned.
 - [[Timing and Pipelining]] — alignment and drain/clear timing.
 - [[Verification Map]] — current evidence and benches.
+- [[Datapath Study Guide]] — one connected course through every implemented module, its exact-code note, state, widths, edge timing and independent test design; planned integration remains explicitly separate.

@@ -1,6 +1,17 @@
 # Progress log
 
-## Current milestone — left delay, pairing verification and hands-on testbench lab
+## Current milestone — module-by-module datapath study guide
+
+- [x] Deliver [[Datapath Study Guide]] as one connected course covering all seven implemented functional modules, linked exact-source walkthroughs, ports/widths, state updates, warmup, nonblocking timing, independent references, test plans and implementation limits.
+- [x] Add `tests/lab/tb_datapath_examples.sv`: small independent experiments, not a new functional wrapper; verify 40 stimulus edges with explicit row/tap, arithmetic, window, engine-pipeline and comparator expectations in Icarus.
+- [x] Extend the teaching runner with `--examples`, keep separate example logs/waves, and register it in the teaching CI step. Extend the Questa macro with `part=examples`.
+- [x] Correct the earlier three-lane comparator toy IDs to values fitting its two-bit default ID width; explain global-ID width requirements.
+- [x] Exercise the 40-edge worked trace in Questa Intel Starter Edition 2021.2 as well as Icarus; both pass. Re-run all 70 production cases, 12 production fault checks, two beginner-lab faults and all eight per-module commands printed in the guide.
+- [x] Record [actual guide/lesson verification](verification/datapath-study-guide.md) and connect the guide through the Home, accelerator and verification hubs without editing the user's canvases or local settings.
+- [ ] User works through each component's own bench-writing exercises. Metadata, border policy, drain/clear scope, frontend/bank/top-level implementation and board acceptance remain future gates.
+- No synthesizable datapath RTL or Quartus project is changed by this study-guide milestone; no new synthesis/fitted timing/board claim.
+
+## Previous milestone — left delay, pairing verification and hands-on testbench lab
 
 - [x] Implement `rtl/left_column_delay.sv`: one whole-column sampling register, registered valid, pause hold and synchronous reset/clear priority.
 - [x] Deliver exact-code [[Left Column Delay]] walkthrough and independently scored `tb_left_column_delay.sv`; verify standalone before local pairing.

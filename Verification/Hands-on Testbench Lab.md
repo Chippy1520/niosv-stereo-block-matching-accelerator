@@ -1,6 +1,6 @@
 # Hands-on Testbench Lab
 
-[[Home]] → [[Verification Map]] → this hands-on session. References: [[Testbench Guide]], [[Left Column Delay]], [[Right Column Shift Register]], [[Column Pairing Verification]].
+[[Home]] → [[Verification Map]] → this hands-on session. References: [[Datapath Study Guide|Module-by-module implementation and testing guide]], [[Testbench Guide]], [[Left Column Delay]], [[Right Column Shift Register]], [[Column Pairing Verification]].
 
 > **Goal:** you write and understand a self-checking bench, not just press Run on someone else's tests. Start with a one-byte delay, then test every existing component separately. Only after these checkpoints do we start the frontend/bank/top-level wrapper. This guide is preparation; completing it is your learning session, not something CI can do for you.
 
@@ -246,7 +246,7 @@ For each part: start with a reset and a short deterministic sequence, insert a p
 - **Row buffer, K=3/W=4:** stream rows `[1,2,3,4]`, `[5,6,7,8]`, `[9,10,11,12]`. First complete columns are `[1,5,9]`, `[2,6,10]`, `[3,7,11]`, `[4,8,12]` in oldest-to-newest row order. `row_last_o` is true on the final complete-column position. Pause must not advance x. Row clear here is a new image/reset operation: don't clear vertical history at each normal row end.
 - **Column SAD, K=3:** left `[10,50,200]`, right `[20,30,100]` gives **130**. Swap sides: same sum. Change each pixel independently. Check the expected output at edge t+2 after input edge t, not immediately.
 - **Column history, K=3:** input costs 6,15,24,33 give valid windows **45**, then **72**. First two accepted costs are warmup. Insert an invalid beat before 24: history must not advance. Clear, then require warmup again.
-- **Comparator, three lanes:** costs `[30,5,5]`, IDs `[7,9,2]`, all valid → `(5,2)`. Replace the first cost by zero but invalidate that lane: it must not win. Physical lane index is not the disparity ID. Tie handling is not “take the first lane”.
+- **Comparator, three lanes:** costs `[30,5,5]`, IDs `[2,1,0]`, all valid → `(5,0)`. These IDs fit the small bench's two-bit ID width. Replace the first cost by zero but invalidate that lane: it must not win. Physical lane index is not the disparity ID. Tie handling is not “take the first lane”. Larger global disparity IDs require an explicitly wider `D_W` and matching bench buses.
 - **Engine, K=3:** left columns `[1,2,3]`, `[4,5,6]`, `[7,8,9]` against zero columns give first window **45**. Its due edge is t+3 relative to the third accepted engine input. Drain three invalid-input edges before clear on a separate edge. Clearing immediately would abort pending output.
 - **Pairing:** create distinct left/right patterns; verify the left is current x for every active right tap, not L[x−d]. At a consumer edge check the old registered beat before NBA updates. Inspect [[Column Pairing Verification]] for the row-clear scope.
 
