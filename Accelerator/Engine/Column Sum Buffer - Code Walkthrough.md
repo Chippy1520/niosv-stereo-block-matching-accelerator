@@ -641,8 +641,8 @@ The enclosing module must supply `clk`, `rst_n`, and `clear_history`, and connec
 | Compute eleven absolute differences for the new column | **Not in this module**; upstream stage |
 | Run 32 disparity calculations in parallel | **Not yet**; one lane's history |
 | Pipeline column adder trees | **Now implemented** in [[Pipelined Column SAD Calculator]], outside this buffer |
-| Comparator tree carrying score and disparity index | **Not yet** |
-| Pipeline comparator tree | **Not yet** |
+| Integrated comparator tree fed by the lane bank | **Not yet**; standalone tree carries score and disparity |
+| Standalone pipeline comparator tree | **Implemented and tested; bank hookup pending** |
 | Accept image width and height | **Not here**; frontend/controller responsibility |
 | Configure kernel through Nios V | **Not yet**; current `K` is compile-time |
 | Clear between scanlines | **Yes**, with explicit clear input |
@@ -715,6 +715,6 @@ The output for `C2` uses the **old** `history_sum` at that edge; the recurrence 
 - [[Column SAD Engines]] — upstream absolute differences and adder tree.
 - [[Image Line Buffers]] — vertical image storage, separate from this ring.
 - [[Disparity Bank]] — independent state per disparity.
-- [[Minimum Comparator Tree]] — future best-match selection.
+- [[Minimum Comparator Tree]] — standalone best-match selector; bank integration pending.
 - [[Timing and Pipelining]] — feedback and pipeline caveats.
 - [[Verification]] — simulation and synthesis evidence.

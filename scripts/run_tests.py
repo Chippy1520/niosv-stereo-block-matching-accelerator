@@ -5,6 +5,7 @@ Examples:
   python scripts/run_tests.py --suite column --case 11:8 --vcd
   python scripts/run_tests.py --suite buffer
   python scripts/run_tests.py --suite engine --seed 123 --random-cycles 5000
+  python scripts/run_tests.py --suite comparator --case 32:15
 """
 import argparse
 import os
@@ -18,18 +19,21 @@ MATRIX = [(1, 8), (2, 8), (3, 8), (5, 8), (11, 8), (16, 8), (11, 10), (3, 1)]
 # Row-buffer widths are small on purpose. IMG_W=640 is the module default, not a sim case.
 ROW_MATRIX = [(1, 8, 1), (2, 8, 3), (3, 8, 4), (5, 8, 2), (11, 8, 8),
               (16, 8, 5), (11, 10, 7), (3, 1, 6)]
+COMPARATOR_MATRIX = [(1, 1), (2, 8), (3, 8), (5, 8), (11, 15),
+                     (16, 15), (31, 15), (32, 15)]
 SUITES = {
     'column': ('tb_column_sad', ['column_sad.sv']),
     'buffer': ('tb_column_sum_buffer', ['column_sum_buffer.sv']),
     'engine': ('tb_sad_engine', ['column_sad.sv', 'column_sum_buffer.sv', 'sad_engine.sv']),
     'row': ('tb_circular_row_buffer', ['circular_row_buffer.sv']),
+    'comparator': ('tb_comparator_tree', ['comparator_tree.sv']),
 }
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--suite', choices=['all', 'column', 'buffer', 'engine', 'row', 'legacy'], default='all')
-    parser.add_argument('--case', metavar='K:PIXEL_BITS[:W]', help='One parameter case. W is used by the row suite only.')
+    parser.add_argument('--suite', choices=['all', 'column', 'buffer', 'engine', 'row', 'comparator', 'legacy'], default='all')
+    parser.add_argument('--case', metavar='K:PIXEL_BITS[:W]', help='One parameter case (N:SAD_BITS for comparator). W is used by the row suite only.')
     parser.add_argument('--random-cycles', type=int, default=2000)
     parser.add_argument('--seed', type=int, help='Nonzero 32-bit xorshift seed')
     parser.add_argument('--vcd', action='store_true', help='Write waveform.vcd per standalone test case')
@@ -82,13 +86,17 @@ def main():
     passed = 0
     for suite in names:
         top, sources = SUITES[suite]
-        suite_cases = ROW_MATRIX if suite == 'row' and not args.case else [
-            (k, p, width) for k, p in cases]
+        suite_cases = ROW_MATRIX if suite == 'row' and not args.case else (
+            [(n, bits, width) for n, bits in COMPARATOR_MATRIX]
+            if suite == 'comparator' and not args.case else
+            [(k, p, width) for k, p in cases])
         for k, p, w in suite_cases:
-            label = f'k{k}_p{p}' if suite != 'row' else f'k{k}_p{p}_w{w}'
+            label = f'n{k}_sad{p}' if suite == 'comparator' else (
+                f'k{k}_p{p}_w{w}' if suite == 'row' else f'k{k}_p{p}')
             case = ROOT / 'build' / suite / label
             case.mkdir(parents=True, exist_ok=True)
-            parameters = [f'-P{top}.K={k}', f'-P{top}.P={p}']
+            parameters = [f'-P{top}.N={k}', f'-P{top}.P={p}'] if suite == 'comparator' else [
+                f'-P{top}.K={k}', f'-P{top}.P={p}']
             if suite == 'row':
                 parameters.append(f'-P{top}.W={w}')
             run([compiler, '-g2012', '-Wall', '-s', top, *parameters, '-o', 'sim.vvp',

@@ -28,6 +28,14 @@ faults = [
      "tap_sum - (SLOT_W + 1)'(K) : tap_sum",
      "tap_sum - (SLOT_W + 1)'(K - 1) : tap_sum",
      'tb_circular_row_buffer', ['circular_row_buffer.sv'], 'ROW'),
+    ('reversed_disparity_tie', 'comparator_tree.sv',
+     'disparity[level-1][2*node+1] < disparity[level-1][2*node]',
+     'disparity[level-1][2*node+1] > disparity[level-1][2*node]',
+     'tb_comparator_tree', ['comparator_tree.sv'], 'COMPARATOR'),
+    ('invalid_lane_can_win', 'comparator_tree.sv',
+     'assign choose_right = active[level-1][2*node+1] &&',
+     'assign choose_right = 1\'b1 &&',
+     'tb_comparator_tree', ['comparator_tree.sv'], 'COMPARATOR'),
 ]
 for name, changed_file, old, new, top, source_names, marker in faults:
     work = ROOT / 'build/mutation-checks' / name
@@ -39,8 +47,9 @@ for name, changed_file, old, new, top, source_names, marker in faults:
                 raise SystemExit(f'Mutation anchor missing: {name}')
             content = content.replace(old, new)
         (work / source).write_text(content, encoding='utf-8')
+    width_param = 'N' if top == 'tb_comparator_tree' else 'K'
     compile_result = subprocess.run(
-        [compiler, '-g2012', '-s', top, f'-P{top}.K=11', f'-P{top}.P=8',
+        [compiler, '-g2012', '-s', top, f'-P{top}.{width_param}=11', f'-P{top}.P=8',
          '-o', 'mutant.vvp', *source_names, str(ROOT / 'tests/rtl' / f'{top}.sv')],
         cwd=work, capture_output=True, text=True, timeout=60)
     if compile_result.returncode:
@@ -49,7 +58,8 @@ for name, changed_file, old, new, top, source_names, marker in faults:
                             cwd=work, capture_output=True, text=True, timeout=60)
     output = result.stdout + result.stderr
     (work / 'result.txt').write_text(output, encoding='utf-8')
-    if result.returncode == 0 or f'{marker} K=' not in output:
+    label = f'{marker} N=' if top == 'tb_comparator_tree' else f'{marker} K='
+    if result.returncode == 0 or label not in output:
         raise SystemExit(f'FAIL: fault {name} was not caught by the expected scoreboard:\n{output}')
     print(f'PASS sensitivity: {name} rejected by {top} scoreboard')
 print(f'PASS: {len(faults)} deliberately faulty designs were detected; real RTL unchanged.')

@@ -11,7 +11,7 @@
 		{"id":"engine-2","type":"text","text":"## Engine 2\n\nL[x] vs Q[2] → SAD(2)","x":1065,"y":1365,"width":340,"height":210,"color":"4"},
 		{"id":"more-engines","type":"text","text":"## ...\n\nEngines 3–30","x":1450,"y":1400,"width":190,"height":140,"color":"5"},
 		{"id":"engine-31","type":"text","text":"## Engine 31\n\nL[x] vs Q[31] → SAD(31)","x":1765,"y":1365,"width":340,"height":210,"color":"4"},
-		{"id":"tree","type":"text","text":"## Comparator tree · planned\n\nMinimum valid (SAD, d) at the same (x,y). Tie: lower d.","x":690,"y":1815,"width":980,"height":200,"color":"2"},
+		{"id":"tree","type":"text","text":"## Comparator tree · standalone RTL (bank hookup planned)\n\nMinimum valid (SAD, d) at the same (x,y). Tie: lower d.","x":690,"y":1815,"width":980,"height":200,"color":"2"},
 		{"id":"output","type":"text","text":"## Disparity result → SDRAM · planned\n\n(d*, SAD*, x, y, valid) to output FIFO. If P_LANES<32, merge best across passes before writeback.","x":875,"y":2155,"width":610,"height":200,"color":"6"},
 		{"id":"left-delay","type":"text","text":"## Left column delay · planned\n\nOne K-pixel column register (11 pixels by default); delay L[x] one clock to match the right cache.","x":180,"y":520,"width":600,"height":220,"color":"2"},
 		{"id":"fanout","type":"text","text":"## Left-column fan-out · planned\n\nBroadcast delayed L[x] to all 32 engines. Carry valid and (x,y); right taps bypass this block.","x":220,"y":880,"width":520,"height":180,"color":"5"}

@@ -16,8 +16,9 @@ Assumption: grayscale pixels are 8-bit, image width 640 and height 480; confirm 
 - [x] Integrate [[Single SAD Engine]] and verify direct raw-pixel window results.
 - [x] Synthesize the engine (`Stereo_SAD_Engine.qpf`) with zero errors/warnings.
 - [x] Implement [[Circular Row Buffer]] — one image, K-row ring, vertical column out.
+- [x] Implement and verify [[Minimum Comparator Tree]] as a standalone pipelined component; [[Minimum Comparator Tree - Code Walkthrough|read its exact code and timing]].
 - [ ] Disparity alignment, then connect the row buffers to [[Single SAD Engine]].
-- [ ] Integrate [[Disparity Bank]] and [[Minimum Comparator Tree]].
+- [ ] Implement [[Disparity Bank]] and connect its aligned lanes to [[Minimum Comparator Tree]].
 - [ ] Integrate [[Nios V Interface]] and board system.
 
 ## Navigate
@@ -27,11 +28,11 @@ Assumption: grayscale pixels are 8-bit, image width 640 and height 480; confirm 
 
 [[Column Sum Buffer - Code Walkthrough|Code, line-by-line explanation, and examples]]
 
-[[Pipelined Column SAD Calculator]] · [[Single SAD Engine]] · [[Circular Row Buffer]] · [[Testbench Guide]]
+[[Pipelined Column SAD Calculator]] · [[Single SAD Engine]] · [[Circular Row Buffer]] · [[Minimum Comparator Tree - Code Walkthrough]] · [[Testbench Guide]]
 
 [[Architecture.canvas]] · [[Module Blocks.canvas|System blocks]] · [[Accelerator Blocks.canvas|Accelerator blocks]] · [[Stereo Frontend Blocks.canvas|Row buffers and taps]] · [[SAD Engine Blocks.canvas|One engine]] · [[Rolling SAD Math]] · [[Interface Contract]] · [[Timing and Pipelining]] · [[Hardware Integration]]
 
 The vault root is also the source project root. Open graph using Ctrl+G.
 RTL: [column_sum_buffer.sv](rtl/column_sum_buffer.sv)
 Test runner: [run_tests.py](scripts/run_tests.py)
-No community plugins required. The row buffer, calculator, history buffer and single engine are implemented and independently tested. Open [[Module Blocks.canvas]] for the planned Nios V / shared-SDRAM / Ethernet / VGA system, then [[Accelerator Blocks.canvas]] for the accelerator's internal flow. Disparity alignment, memory transport and the multi-lane bank remain planned.
+No community plugins required. The row buffer, calculator, history buffer, single engine and standalone comparator are independently tested. Open [[Module Blocks.canvas]] for the planned Nios V / shared-SDRAM / Ethernet / VGA system, then [[Accelerator Blocks.canvas]] for the accelerator's internal flow. Disparity alignment, memory transport and the multi-lane bank remain planned.

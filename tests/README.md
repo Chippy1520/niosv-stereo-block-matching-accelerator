@@ -6,6 +6,7 @@
 - `tests/rtl/tb_column_sad.sv`: serial absolute-difference reference plus exact pipeline scoreboard.
 - `tests/rtl/tb_column_sum_buffer.sv`: independent full-window resummation, warmup, wrapping, clear and stalls.
 - `tests/rtl/tb_sad_engine.sv`: full raw-pixel window reference and row-boundary checks.
+- `tests/rtl/tb_comparator_tree.sv`: serial valid-candidate minimum, deterministic tie rule, odd padding and exact pipeline scoreboard.
 
 Run from the repository root:
 
@@ -15,10 +16,11 @@ python scripts/run_tests.py --suite column
 python scripts/run_tests.py --suite buffer
 python scripts/run_tests.py --suite row --case 11:8:8 --vcd
 python scripts/run_tests.py --suite engine --case 11:8 --vcd
+python scripts/run_tests.py --suite comparator --case 32:15 --vcd
 python scripts/check_test_sensitivity.py
 ```
 
-See [Testbench Guide](../Verification/Testbench%20Guide.md) for compilation commands, parameters, timing, reference independence, and optional waveforms. All four benches are tracked files, not just generated snippets. `scripts/run_buffer_vectors.py` preserves the earlier independent Python/deque regression. Every new functional RTL module needs its own walkthrough and standalone self-checking bench in the same milestone; `scripts/check_walkthrough.py` checks source, note, bench and runner registration.
+See [Testbench Guide](../Verification/Testbench%20Guide.md) for compilation commands, parameters, timing, reference independence, and optional waveforms. All five benches are tracked files, not just generated snippets. `scripts/run_buffer_vectors.py` preserves the earlier independent Python/deque regression. Every new functional RTL module needs its own walkthrough and standalone self-checking bench in the same milestone; `scripts/check_walkthrough.py` checks source, note, bench and runner registration.
 
 ## Future system-level tests (not covered by the current lane)
 

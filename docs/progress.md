@@ -1,5 +1,13 @@
 # Progress log
 
+## Current milestone — standalone comparator tree
+
+- [x] Implement `rtl/comparator_tree.sv` with a registered valid-aware minimum reduction over explicit `(SAD, disparity)` IDs; ties choose lower disparity.
+- [x] Add exact-source [[Minimum Comparator Tree - Code Walkthrough]] and independently scored `tb_comparator_tree.sv`, including one/odd/32 lanes, bubbles and clear/reset.
+- [x] Run five standalone SV suites and the Python reference: 46 simulation cases. Seven deliberate RTL faults were rejected, including reversed ties and invalid-lane selection.
+- [x] Quartus Lite 22.1 Analysis & Synthesis of the default 32-lane component: 0 errors, 1 processor-count warning, 1622 logic cells before fitting. [Evidence](verification/comparator-synthesis.md).
+- [ ] Feed the tree aligned, border-masked scores from a multi-lane bank and carry coordinate tags; not part of this standalone module.
+
 ## Vault hierarchy and HDL-module delivery rule
 
 - [x] Organize study notes and drill-down canvases as system → accelerator → frontend/engine → module, with linked Obsidian hub notes. Preserve the root dashboard, project files, HDL, and existing code walkthroughs.

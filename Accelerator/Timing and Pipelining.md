@@ -2,7 +2,7 @@
 #design
 The first [[Column Sum Buffer]] has registered output and a one-clock feedback update. It is **not** an arbitrarily retimed multi-stage accumulator. The history update contains subtraction and addition; actual achievable frequency requires fitted Quartus timing analysis.
 
-[[Pipelined Column SAD Calculator]] now implements registered absolute differences and a registered balanced reduction tree, with matching valid delays. [[Single SAD Engine]] adds the existing registered horizontal SAD output. The [[Minimum Comparator Tree]] is still planned. Future coordinate/disparity metadata must receive matching delays.
+[[Pipelined Column SAD Calculator]] implements registered absolute differences and a registered balanced reduction tree, with matching valid delays. [[Single SAD Engine]] adds the existing registered horizontal SAD output. The standalone [[Minimum Comparator Tree]] adds `max(1, ceil(log2(P_LANES)))` registered pairwise levels after aligned engine outputs (five for 32 lanes); the **bank-to-tree hookup** remains planned. Future coordinate metadata must receive matching delays.
 
 Adding pipeline stages into history_sum feedback naively breaks consecutive-column accumulation. Any such change needs a proven look-ahead/interleaving architecture or a different rolling-sum organization.
 

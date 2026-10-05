@@ -10,13 +10,15 @@ SystemVerilog stereo SAD accelerator under incremental development for the **Ter
 - **Pipelined column-SAD calculator:** parallel unsigned absolute differences and a registered balanced reduction tree.
 - **Circular column-history buffer:** retains K−1 column sums and a running total; includes the final window-SAD adder.
 - **Single SAD engine:** connects those modules, accepting already-aligned vertical pixel columns and returning full K×K window costs.
+- **Pipelined comparator tree:** reduces aligned valid `(SAD, disparity)` candidates; lower SAD wins, then lower disparity. Default 32-lane component has five registered levels. The bank that supplies candidates is not yet built.
 - Defaults: **11×11** window, **8-bit** pixels, **640**-wide row store. The row buffer is not yet connected to the engine, and this is not a full disparity search.
-- Four standalone self-checking SystemVerilog benches (row buffer, calculator, column history, engine). The first three parameter suites have eight cases each; the row suite has its own eight width cases. Plus six independent Python/deque buffer cases: **38 passing simulation cases**.
-- Five deliberate arithmetic/timing/flush/wiring faults were rejected by the testbenches.
+- Five standalone self-checking SystemVerilog benches (row buffer, calculator, column history, engine, comparator); each has eight parameter cases. Plus six independent Python/deque buffer cases: **46 passing simulation cases**.
+- Seven deliberate arithmetic/timing/flush/wiring/tie faults were rejected by the testbenches.
 - Engine Analysis & Synthesis passed in Quartus Prime Lite 22.1 with **zero errors and zero warnings**, reporting 770 logic elements before fitting. The row-buffer smoke top (`IMG_W=16`) also passed with zero errors and zero warnings, reporting 3156 logic cells; the `IMG_W=640` default did not finish synthesis within 300 seconds. No fitted timing result is claimed.
+- Default 32-lane comparator component Analysis & Synthesis passed in Quartus Lite 22.1 with **zero errors, one processor-count warning, and 1622 logic cells before fitting**. This is not a fitted timing or integrated bank result.
 - Linked architecture notes, an Obsidian canvas, and a complete line-by-line RTL walkthrough.
 
-**Not implemented here yet:** disparity alignment between the two row buffers and the engine, the 32-lane wrapper, comparator tree, runtime kernel configuration, Nios V/Avalon integration, or a board-ready bitstream. Prior notes record a separately demonstrated Nios V Hello World; its working board project is not included here.
+**Not implemented here yet:** disparity alignment between the two row buffers and the engine, the 32-lane wrapper and its comparator wiring, cross-group best merge, runtime kernel configuration, Nios V/Avalon integration, or a board-ready bitstream. Prior notes record a separately demonstrated Nios V Hello World; its working board project is not included here.
 
 ## Start here
 
@@ -25,6 +27,7 @@ SystemVerilog stereo SAD accelerator under incremental development for the **Ter
 - [Pipelined column calculator: code and explanation](Accelerator/Engine/Pipelined%20Column%20SAD%20Calculator.md)
 - [Single engine: code, interfaces and row timing](Accelerator/Engine/Single%20SAD%20Engine.md)
 - [Circular row buffer: code and abstraction](Accelerator/Frontend/Circular%20Row%20Buffer.md)
+- [Comparator tree: exact RTL and code walkthrough](Accelerator/Minimum%20Comparator%20Tree%20-%20Code%20Walkthrough.md)
 - [System-level module blocks: Nios V, Ethernet, SDRAM, VGA, accelerator](System/Module%20Blocks.canvas)
 - [Accelerator internals: transport, row buffers, taps, lanes, reducer, writeback](Accelerator/Accelerator%20Blocks.canvas)
 - [One engine's submodules](Accelerator/Engine/SAD%20Engine%20Blocks.canvas)
@@ -57,6 +60,7 @@ python scripts/run_tests.py --suite column
 python scripts/run_tests.py --suite buffer
 python scripts/run_tests.py --suite row --case 11:8:8 --vcd
 python scripts/run_tests.py --suite engine --case 11:8 --vcd
+python scripts/run_tests.py --suite comparator --case 32:15 --vcd
 ```
 
 Windows may alternatively use the local, untracked portable installation at `tools/mingw64/bin/`. No third-party Python packages are required by these tests. Standalone SV benches are tracked in `tests/rtl/`. Compiled simulations, optional waveforms and legacy vectors are generated in `build/`; results go to `sim/results.txt`. See the testbench guide for parameter matrices and extra seeds.
