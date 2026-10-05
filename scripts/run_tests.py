@@ -21,24 +21,27 @@ ROW_MATRIX = [(1, 8, 1), (2, 8, 3), (3, 8, 4), (5, 8, 2), (11, 8, 8),
               (16, 8, 5), (11, 10, 7), (3, 1, 6)]
 COMPARATOR_MATRIX = [(1, 1), (2, 8), (3, 8), (5, 8), (11, 15),
                      (16, 15), (31, 15), (32, 15)]
+SHIFT_MATRIX = [(1, 1, 1), (1, 8, 3), (3, 8, 1), (3, 8, 5),
+                (11, 8, 32), (11, 10, 7), (16, 8, 2), (3, 1, 4)]
 SUITES = {
     'column': ('tb_column_sad', ['column_sad.sv']),
     'buffer': ('tb_column_sum_buffer', ['column_sum_buffer.sv']),
     'engine': ('tb_sad_engine', ['column_sad.sv', 'column_sum_buffer.sv', 'sad_engine.sv']),
     'row': ('tb_circular_row_buffer', ['circular_row_buffer.sv']),
     'comparator': ('tb_comparator_tree', ['comparator_tree.sv']),
+    'shift': ('tb_right_column_shift', ['right_column_shift.sv']),
 }
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--suite', choices=['all', 'column', 'buffer', 'engine', 'row', 'comparator', 'legacy'], default='all')
-    parser.add_argument('--case', metavar='K:PIXEL_BITS[:W]', help='One parameter case (N:SAD_BITS for comparator). W is used by the row suite only.')
+    parser.add_argument('--suite', choices=['all', 'column', 'buffer', 'engine', 'row', 'comparator', 'shift', 'legacy'], default='all')
+    parser.add_argument('--case', metavar='K:PIXEL_BITS[:W]', help='One parameter case (N:SAD_BITS for comparator). W is row width or shift tap count; shift defaults to 32 taps.')
     parser.add_argument('--random-cycles', type=int, default=2000)
     parser.add_argument('--seed', type=int, help='Nonzero 32-bit xorshift seed')
     parser.add_argument('--vcd', action='store_true', help='Write waveform.vcd per standalone test case')
     args = parser.parse_args()
-    width = 8
+    width = 32 if args.suite == 'shift' else 8
     cases = MATRIX
     if args.case:
         try:
@@ -87,11 +90,13 @@ def main():
     for suite in names:
         top, sources = SUITES[suite]
         suite_cases = ROW_MATRIX if suite == 'row' and not args.case else (
+            SHIFT_MATRIX if suite == 'shift' and not args.case else
             [(n, bits, width) for n, bits in COMPARATOR_MATRIX]
             if suite == 'comparator' and not args.case else
             [(k, p, width) for k, p in cases])
         for k, p, w in suite_cases:
             label = f'n{k}_sad{p}' if suite == 'comparator' else (
+                f'k{k}_p{p}_t{w}' if suite == 'shift' else
                 f'k{k}_p{p}_w{w}' if suite == 'row' else f'k{k}_p{p}')
             case = ROOT / 'build' / suite / label
             case.mkdir(parents=True, exist_ok=True)
@@ -99,6 +104,8 @@ def main():
                 f'-P{top}.K={k}', f'-P{top}.P={p}']
             if suite == 'row':
                 parameters.append(f'-P{top}.W={w}')
+            elif suite == 'shift':
+                parameters.append(f'-P{top}.T={w}')
             run([compiler, '-g2012', '-Wall', '-s', top, *parameters, '-o', 'sim.vvp',
                  *(str(ROOT / 'rtl' / name) for name in sources),
                  str(ROOT / 'tests/rtl' / f'{top}.sv')], case)

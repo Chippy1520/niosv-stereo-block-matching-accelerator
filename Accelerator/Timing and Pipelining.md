@@ -9,3 +9,5 @@ Adding pipeline stages into history_sum feedback naively breaks consecutive-colu
 For L=ceil(log2(K)), input sampled at edge t reaches the column output after t+L and engine output after t+L+1, once horizontal warmup is complete. Normal row end drains L+1 edges before a separate clear edge. Clear itself aborts in-flight work.
 
 Current verification establishes functional cycle behavior and component synthesis resource estimates, not fitted Fmax, board operation, or whole-accelerator pixel rate. For K=11 the engine has six register stages including the sampling stage, giving an edge offset of five.
+
+[[Right Column Shift Register]] accepts a complete right column at edge t and exposes registered taps after that edge. Pauses hold its horizontal history but suppress output validity. Matching left-column/valid and coordinate delays are required before pairing; those are not implemented. Engine-only drain counts above begin at engine inputs. A future controller draining from the row-buffer side must account for the extra frontend register handoff, then clear horizontal histories separately while keeping vertical row-buffer history.

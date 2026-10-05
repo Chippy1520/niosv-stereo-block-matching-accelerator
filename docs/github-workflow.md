@@ -13,8 +13,8 @@ Completed project milestones are documented, verified, committed and pushed as p
 Every push or pull request triggers `.github/workflows/rtl-tests.yml`:
 1. Install Icarus Verilog on an Ubuntu runner.
 2. Check the walkthrough's embedded RTL matches the source.
-3. Run 46 standalone/integrated simulation cases, including the comparator tree, row-buffer suite and preserved Python-reference buffer cases.
-4. Verify seven deliberately faulty RTL copies are rejected by the benches.
+3. Run 54 standalone/integrated simulation cases, including the right-column shift cache, comparator tree, row-buffer suite and preserved Python-reference buffer cases.
+4. Verify ten deliberately faulty RTL copies are rejected by the benches.
 5. Upload simulation results and test artifacts.
 
 ## What is not automatic

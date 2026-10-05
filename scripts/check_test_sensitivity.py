@@ -36,6 +36,14 @@ faults = [
      'assign choose_right = active[level-1][2*node+1] &&',
      'assign choose_right = 1\'b1 &&',
      'tb_comparator_tree', ['comparator_tree.sv'], 'COMPARATOR'),
+    ('shift_on_bubble', 'right_column_shift.sv', 'if (valid_i) begin',
+     "if (1'b1) begin", 'tb_right_column_shift', ['right_column_shift.sv'], 'SHIFT'),
+    ('premature_tap_valid', 'right_column_shift.sv',
+     'occupied & {TAPS{beat_valid}}', '{TAPS{beat_valid}}',
+     'tb_right_column_shift', ['right_column_shift.sv'], 'SHIFT'),
+    ('shift_ignores_clear', 'right_column_shift.sv',
+     'if (!rst_n || clear_i)', 'if (!rst_n)',
+     'tb_right_column_shift', ['right_column_shift.sv'], 'SHIFT'),
 ]
 for name, changed_file, old, new, top, source_names, marker in faults:
     work = ROOT / 'build/mutation-checks' / name

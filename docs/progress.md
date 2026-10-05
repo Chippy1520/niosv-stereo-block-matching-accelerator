@@ -1,6 +1,15 @@
 # Progress log
 
-## Current milestone — standalone comparator tree
+## Current milestone — standalone right-column shift register
+
+- [x] Implement `rtl/right_column_shift.sv`: shift whole K-pixel columns only on accepted input; registered taps have per-disparity warmup validity.
+- [x] Preserve history across pauses, suppress bubble validity, and discard simultaneous input on reset/clear. Caller clears horizontal history between output rows.
+- [x] Deliver [[Right Column Shift Register]] with exact source and sectionwise syntax/timing reasons, plus `tb_right_column_shift.sv` whose reference indexes an append-only accepted-column log.
+- [x] Run eight shift cases, default full regression of 54 cases, and ten fault checks. Extra K=11/P=8/TAPS=32 run: seed 12345, 10000 random cycles, 8000 valid output beats; VCD generated locally.
+- [x] Quartus Lite 22.1 Analysis & Synthesis of the full default component: 0 errors, 0 warnings, 2883 logic cells before fitting. [Evidence](verification/right-shift-synthesis.md).
+- [ ] Implement matching left-column/valid alignment separately, then verify frontend pairing, coordinate/border policy and upstream drain timing. No bank or board claim.
+
+## Previous milestone — standalone comparator tree
 
 - [x] Implement `rtl/comparator_tree.sv` with a registered valid-aware minimum reduction over explicit `(SAD, disparity)` IDs; ties choose lower disparity.
 - [x] Add exact-source [[Minimum Comparator Tree - Code Walkthrough]] and independently scored `tb_comparator_tree.sv`, including one/odd/32 lanes, bubbles and clear/reset.
