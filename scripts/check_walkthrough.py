@@ -15,6 +15,7 @@ MODULES = {
     'sad_engine': ('Accelerator/Engine/Single SAD Engine.md', 'engine'),
     'comparator_tree': ('Accelerator/Minimum Comparator Tree - Code Walkthrough.md', 'comparator'),
     'right_column_shift': ('Accelerator/Frontend/Right Column Shift Register.md', 'shift'),
+    'left_column_delay': ('Accelerator/Frontend/Left Column Delay.md', 'delay'),
 }
 # Synthesis-only fixed-width smoke top; its instantiated functional module is covered above.
 SYNTHESIS_TOPS = {'circular_row_buffer_synth'}

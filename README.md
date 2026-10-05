@@ -11,13 +11,15 @@ SystemVerilog stereo SAD accelerator under incremental development for the **Ter
 - **Circular column-history buffer:** retains K−1 column sums and a running total; includes the final window-SAD adder.
 - **Single SAD engine:** connects those modules, accepting already-aligned vertical pixel columns and returning full K×K window costs.
 - **Pipelined comparator tree:** reduces aligned valid `(SAD, disparity)` candidates; lower SAD wins, then lower disparity. Default 32-lane component has five registered levels. The bank that supplies candidates is not yet built.
-- **Right-column shift cache:** registered whole-column disparity taps with per-tap warmup validity, pause/hold behavior and row-clear isolation. The matching left delay is still a separate next step.
+- **Right-column shift cache and left delay:** registered whole-column disparity taps with per-tap warmup validity and matching left-column/valid alignment. Standalone benches and a local column-pairing bench verify pauses, clear and consumer-edge timing; row-buffer/engine assembly is still planned.
 - Defaults: **11×11** window, **8-bit** pixels, **640**-wide row store. The row buffer is not yet connected to the engine, and this is not a full disparity search.
-- Six standalone self-checking SystemVerilog benches (row buffer, calculator, column history, engine, comparator, right shift); each has eight parameter cases. Plus six independent Python/deque buffer cases: **54 passing simulation cases**.
-- Ten deliberate arithmetic/timing/flush/wiring/tie/shift-valid faults were rejected by the testbenches.
+- Seven component self-checking SystemVerilog benches plus a column-pairing integration bench, each with eight parameter cases. Plus six independent Python/deque buffer cases: **70 passing simulation cases**.
+- Twelve deliberate arithmetic/timing/flush/wiring/tie/valid faults were rejected by the production benches. The separate beginner lab passed its seven directed beats and caught two compiled faults.
 - Engine Analysis & Synthesis passed in Quartus Prime Lite 22.1 with **zero errors and zero warnings**, reporting 770 logic elements before fitting. The row-buffer smoke top (`IMG_W=16`) also passed with zero errors and zero warnings, reporting 3156 logic cells; the `IMG_W=640` default did not finish synthesis within 300 seconds. No fitted timing result is claimed.
 - Default 32-lane comparator component Analysis & Synthesis passed in Quartus Lite 22.1 with **zero errors, one processor-count warning, and 1622 logic cells before fitting**. This is not a fitted timing or integrated bank result.
 - Default right-shift component (K=11, 8-bit pixels, 32 taps) Analysis & Synthesis passed with **zero errors, zero warnings and 2883 logic cells before fitting**. Its wide tap bus is internal wiring, not a board pinout.
+- Matching left delay Analysis & Synthesis passed with **zero errors, zero warnings and 90 logic cells before fitting**.
+- A hands-on bench-writing guide and Questa/ModelSim macro are included; the beginner lab and eight selected component/pairing directed simulations were actually run in Questa Intel Starter Edition 2021.2.
 - Linked architecture notes, an Obsidian canvas, and a complete line-by-line RTL walkthrough.
 
 **Not implemented here yet:** disparity alignment between the two row buffers and the engine, the 32-lane wrapper and its comparator wiring, cross-group best merge, runtime kernel configuration, Nios V/Avalon integration, or a board-ready bitstream. Prior notes record a separately demonstrated Nios V Hello World; its working board project is not included here.
@@ -31,6 +33,9 @@ SystemVerilog stereo SAD accelerator under incremental development for the **Ter
 - [Circular row buffer: code and abstraction](Accelerator/Frontend/Circular%20Row%20Buffer.md)
 - [Comparator tree: exact RTL and code walkthrough](Accelerator/Minimum%20Comparator%20Tree%20-%20Code%20Walkthrough.md)
 - [Right-column shift register: code, tap validity and timing](Accelerator/Frontend/Right%20Column%20Shift%20Register.md)
+- [Left-column delay: exact code and timing](Accelerator/Frontend/Left%20Column%20Delay.md)
+- **[Hands-on testbench-writing lab — start here before the wrapper](Verification/Hands-on%20Testbench%20Lab.md)**
+- [Local left/right pairing verification](Verification/Column%20Pairing%20Verification.md)
 - [System-level module blocks: Nios V, Ethernet, SDRAM, VGA, accelerator](System/Module%20Blocks.canvas)
 - [Accelerator internals: transport, row buffers, taps, lanes, reducer, writeback](Accelerator/Accelerator%20Blocks.canvas)
 - [One engine's submodules](Accelerator/Engine/SAD%20Engine%20Blocks.canvas)
@@ -59,6 +64,9 @@ python scripts/run_tests.py
 python scripts/check_test_sensitivity.py
 
 # Individual stages or waveform output:
+python scripts/run_testbench_lab.py --check-faults
+python scripts/run_tests.py --suite delay --case 3:8 --vcd
+python scripts/run_tests.py --suite pairing --case 3:8:3 --vcd
 python scripts/run_tests.py --suite column
 python scripts/run_tests.py --suite buffer
 python scripts/run_tests.py --suite row --case 11:8:8 --vcd

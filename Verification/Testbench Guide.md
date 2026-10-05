@@ -5,6 +5,8 @@
 
 [[Right Column Shift Register]] — standalone right-column cache, not paired frontend wiring.
 
+**Start [[Hands-on Testbench Lab]] to write your own bench in Questa/ModelSim.** [[Left Column Delay]] and [[Column Pairing Verification]] now verify local column alignment; full row-buffer/engine assembly remains planned.
+
 ## Module → standalone test → integration → overall test
 
 Each implemented module has its own tracked SystemVerilog testbench:
@@ -17,6 +19,8 @@ Each implemented module has its own tracked SystemVerilog testbench:
 | Single engine | rtl/sad_engine.sv | tests/rtl/tb_sad_engine.sv | Retain raw pixel columns and recompute the full K×K pixel SAD |
 | Comparator tree | rtl/comparator_tree.sv | tests/rtl/tb_comparator_tree.sv | Serial minimum of valid input candidates, including tie ID |
 | Right shift | rtl/right_column_shift.sv | tests/rtl/tb_right_column_shift.sv | Index an append-only log of accepted columns; no reference shift chain |
+| Left delay | rtl/left_column_delay.sv | tests/rtl/tb_left_column_delay.sv | Sampled input/hold contract, before/after-edge checks |
+| Column pairing (integration) | Both alignment modules | tests/rtl/tb_column_pairing.sv | Independent right-column log and consumer-edge checks |
 
 No scoreboard reads DUT internal state. Expected values use wider software-style arithmetic rather than the hardware's running recurrence. Every clock checks output validity and output data, including held invalid data and reset/clear behavior. Scoreboards sample after nonblocking updates, avoiding clock-edge races. A mismatch or timeout exits nonzero.
 
@@ -27,13 +31,16 @@ The original Python/deque buffer regression is preserved separately in `scripts/
 From the repository root:
 
 ```sh
-python scripts/run_tests.py                         # all suites, 54 cases
+python scripts/run_tests.py                         # all suites, 70 cases
 python scripts/run_tests.py --suite column          # calculator alone
 python scripts/run_tests.py --suite buffer          # column-history buffer alone
 python scripts/run_tests.py --suite row             # circular row buffer alone
 python scripts/run_tests.py --suite engine          # integrated lane
 python scripts/run_tests.py --suite comparator      # standalone 1–32-lane tree
 python scripts/run_tests.py --suite shift           # whole-column right cache
+python scripts/run_tests.py --suite delay           # matching left register
+python scripts/run_tests.py --suite pairing         # delay/cache integration
+python scripts/run_testbench_lab.py --check-faults  # small teaching baseline
 python scripts/run_tests.py --suite legacy          # original Python/deque cases
 python scripts/check_walkthrough.py                 # all embedded RTL snapshots
 python scripts/check_test_sensitivity.py            # deliberately wrong RTL must fail
@@ -43,7 +50,7 @@ Calculator, column-history and engine suites use `(K,P) = (1,8), (2,8), (3,8), (
 
 The row suite uses its own widths: `(K,P,W) = (1,8,1), (2,8,3), (3,8,4), (5,8,2), (11,8,8), (16,8,5), (11,10,7), (3,1,6)`. Default module width remains 640; simulation does not stream a full 640×480 frame.
 
-Three engine-stage suites, row buffer, comparator and right shift each run eight cases; plus six legacy cases = 54 cases. Standalone benches run directed cases plus 2000 pseudorandom input cycles by default; legacy cases retain 5000 random cycles each. Random generators are deterministic xorshift32; each bench has its own default seed. Use a nonzero `--seed` to reproduce another run. `--case K:P:W` sets row width; `--case K:P:T` sets shift taps (K:P defaults to 32 taps in the shift-only suite); for the comparator use `--case LANES:SAD_W`.
+Seven component suites and one pairing integration suite each run eight cases; plus six legacy cases = 70 cases. Delay uses the calculator's (K,P) matrix; pairing shares the shift matrix. Benches run directed cases plus 2000 random cycles by default; legacy cases retain 5000. Seeds are nonzero xorshift32. `--case K:P:W` sets row width; `--case K:P:T` sets shift/pairing taps (K:P defaults to 32 taps for either individual suite); comparator uses `LANES:SAD_W`. The seven-beat teaching baseline runs separately; its two fault checks do not add cases to the 70-case regression.
 
 Shift matrix `(K,P,T)`: (1,1,1), (1,8,3), (3,8,1), (3,8,5), (11,8,32), (11,10,7), (16,8,2), (3,1,4).
 
@@ -53,6 +60,8 @@ Shift matrix `(K,P,T)`: (1,1,1), (1,8,3), (3,8,1), (3,8,5), (11,8,32), (11,10,7)
 python scripts/run_tests.py --suite engine --case 11:8 --vcd
 python scripts/run_tests.py --suite comparator --case 32:15 --vcd
 python scripts/run_tests.py --suite shift --case 11:8:32 --vcd
+python scripts/run_tests.py --suite delay --case 3:8 --vcd
+python scripts/run_tests.py --suite pairing --case 3:8:3 --vcd
 ```
 
 Open `build/engine/k11_p8/waveform.vcd` or `build/comparator/n32_sad15/waveform.vcd` in a waveform viewer. The same pattern applies to the other suites. Dumping is opt-in to avoid large default artifacts. Waveforms and build files are not committed.
@@ -96,8 +105,8 @@ Create `build/` first if running these manually. Compiler/runtime must be on PAT
 
 Shift coverage: whole-column packed order, independent per-tap warmup, single/odd tap counts, long history, pause-with-changing-data, clear at every occupancy depth, reset/clear priority and no previous-row leakage. Its waveform is `build/shift/k11_p8_t32/waveform.vcd`.
 
-The optional sensitivity script mutates only disposable copies under `build/mutation-checks/`. It requires ten faulty designs to compile but fail their numerical/timing scoreboards: missing pixel, early valid, ignored clear, miswired engine valid, shifted row tap, reversed comparator tie, invalid-lane win, shift-on-pause, premature tap validity and ignored shift clear. This is a targeted sanity check on the tests, not exhaustive mutation or formal coverage.
+The sensitivity script mutates only disposable copies under `build/mutation-checks/`. Twelve compiled faults must fail their scoreboards: missing pixel, early valid, ignored clear, miswired engine valid, shifted row tap, reversed comparator tie, invalid-lane win, shift-on-pause, premature tap validity, ignored shift clear, delay bubble-valid and ignored delay clear. This is targeted sensitivity, not exhaustive mutation/formal coverage. The separate beginner lab also catches bubble-valid and ignored-clear faults in its own copies.
 
 ## Not covered by this milestone
 
-Image-memory addressing, stereo row-buffer integration, left/right alignment, full image-border policy, bank-to-tree wiring, cross-group best merge, Avalon wait states, CDC, physical FPGA pins, actual Fmax, Nios V execution and full disparity-map accuracy remain later integration tests. Standalone right-tap warmup and winner/tie behavior are tested here.
+Image-memory addressing, row-buffer/engine assembly, coordinate metadata, full image-border policy, bank-to-tree wiring, cross-group best merge, Avalon wait states, CDC, physical FPGA pins, actual Fmax, Nios V execution and full disparity-map accuracy remain later integration tests. Local left/right column alignment, right-tap warmup and winner/tie behavior are tested here; do the hands-on sessions before adding the top-level wrapper.

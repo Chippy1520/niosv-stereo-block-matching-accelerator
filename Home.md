@@ -18,7 +18,9 @@ Assumption: grayscale pixels are 8-bit, image width 640 and height 480; confirm 
 - [x] Implement [[Circular Row Buffer]] — one image, K-row ring, vertical column out.
 - [x] Implement and verify [[Minimum Comparator Tree]] as a standalone pipelined component; [[Minimum Comparator Tree - Code Walkthrough|read its exact code and timing]].
 - [x] Implement and verify [[Right Column Shift Register]] as a standalone whole-column cache.
-- [ ] Add matching left-column/valid alignment before stereo pairing.
+- [x] Implement [[Left Column Delay]] and verify local [[Column Pairing Verification|left/right pairing]].
+- [x] Prepare [[Hands-on Testbench Lab]] with runnable beginner bench and tested Questa commands.
+- [ ] Work through the hands-on individual-part sessions before the new top-level wrapper.
 - [ ] Disparity alignment, then connect the row buffers to [[Single SAD Engine]].
 - [ ] Implement [[Disparity Bank]] and connect its aligned lanes to [[Minimum Comparator Tree]].
 - [ ] Integrate [[Nios V Interface]] and board system.
@@ -33,6 +35,8 @@ Assumption: grayscale pixels are 8-bit, image width 640 and height 480; confirm 
 [[Pipelined Column SAD Calculator]] · [[Single SAD Engine]] · [[Circular Row Buffer]] · [[Minimum Comparator Tree - Code Walkthrough]] · [[Testbench Guide]]
 
 [[Right Column Shift Register]] — right disparity taps, validity and pause/clear timing.
+
+[[Left Column Delay]] · [[Column Pairing Verification]] · **[[Hands-on Testbench Lab|Start the practical bench-writing session]]**
 
 [[Architecture.canvas]] · [[Module Blocks.canvas|System blocks]] · [[Accelerator Blocks.canvas|Accelerator blocks]] · [[Stereo Frontend Blocks.canvas|Row buffers and taps]] · [[SAD Engine Blocks.canvas|One engine]] · [[Rolling SAD Math]] · [[Interface Contract]] · [[Timing and Pipelining]] · [[Hardware Integration]]
 

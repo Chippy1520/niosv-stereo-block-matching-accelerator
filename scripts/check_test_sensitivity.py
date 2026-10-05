@@ -44,6 +44,10 @@ faults = [
     ('shift_ignores_clear', 'right_column_shift.sv',
      'if (!rst_n || clear_i)', 'if (!rst_n)',
      'tb_right_column_shift', ['right_column_shift.sv'], 'SHIFT'),
+    ('delay_bubble_valid', 'left_column_delay.sv', 'valid_o <= valid_i;',
+     "valid_o <= 1'b1;", 'tb_left_column_delay', ['left_column_delay.sv'], 'DELAY'),
+    ('delay_ignores_clear', 'left_column_delay.sv', 'if (!rst_n || clear_i)',
+     'if (!rst_n)', 'tb_left_column_delay', ['left_column_delay.sv'], 'DELAY'),
 ]
 for name, changed_file, old, new, top, source_names, marker in faults:
     work = ROOT / 'build/mutation-checks' / name

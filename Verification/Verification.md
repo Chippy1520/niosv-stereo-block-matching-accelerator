@@ -5,7 +5,7 @@
 
 ## Current hierarchy of checks
 
-Six standalone self-checking SystemVerilog benches independently verify the row buffer, calculator, circular column history, integrated engine, standalone comparator and [[Right Column Shift Register]]. The original Python/deque buffer tests are also retained. See [[Testbench Guide]] for exact files, commands, scoreboards and coverage.
+Seven component self-checking SystemVerilog benches verify the row buffer, calculator, column history, single engine, comparator, [[Right Column Shift Register]] and [[Left Column Delay]]. [[Column Pairing Verification]] adds a delay/cache integration bench. The original Python/deque tests remain. See [[Testbench Guide]] and [[Hands-on Testbench Lab]].
 
 ```sh
 python scripts/check_walkthrough.py
@@ -13,7 +13,9 @@ python scripts/run_tests.py
 python scripts/check_test_sensitivity.py
 ```
 
-Default regression: **54 simulation cases**. Three SV suites run eight `(K,P)` configurations each, the row suite runs eight `(K,P,W)` configurations, the comparator runs eight `(LANES,SAD_W)` configurations, the right shift runs eight `(K,P,TAPS)` configurations, plus six original Python-reference cases. SV cases include 2000 randomized cycles each after directed tests; Python-reference cases include 5000 each. All output cycles are checked, not just final checksums. Ten deliberate RTL faults are rejected, including shift-on-pause, premature tap validity and ignored shift clear.
+Default regression: **70 simulation cases**: eight SV suites × eight parameter cases, plus six Python-reference cases. SV cases have 2000 randomized cycles after directed tests; Python cases retain 5000. Twelve deliberate production-RTL faults are rejected, including pause/clear faults in the left delay. The separate teaching baseline passed seven beats and detected two compiled faults using `python scripts/run_testbench_lab.py --check-faults`.
+
+Questa Intel Starter FPGA Edition 2021.2 actually ran the beginner baseline and all eight macro-selected component/pairing directed cases using `scripts/questa_lab.do`. Local logs are `build/lab/questa*.log`. This is functional simulation, not physical timing; CI uses Icarus and also exercises the teaching baseline/fault checks.
 
 Local simulator: Icarus Verilog 13.0. GitHub Actions runs the same benches on Ubuntu using its packaged Icarus version. CI logs identify its installed version; the checks do not depend on matching the local version.
 
@@ -26,6 +28,7 @@ Local simulator: Icarus Verilog 13.0. GitHub Actions runs the same benches on Ub
 - Synthesis summary: [single-engine-synthesis.md](../docs/verification/single-engine-synthesis.md).
 - Comparator-only synthesis: [comparator-synthesis.md](../docs/verification/comparator-synthesis.md).
 - Right-shift synthesis: [right-shift-synthesis.md](../docs/verification/right-shift-synthesis.md); full default K=11/P=8/TAPS=32, not a reduced smoke top.
+- Left-delay synthesis: [left-delay-synthesis.md](../docs/verification/left-delay-synthesis.md); full default K=11/P=8, zero errors/warnings and 90 logic cells before fitting.
 - GitHub Actions uploads fresh results and test artifacts for each run.
 
 ## Synthesis versus timing
@@ -36,7 +39,7 @@ The original `Stereo_SAD.qpf` buffer-only project also previously passed (one pr
 
 No fitting, fully constrained timing, board programming, CPU integration or physical image test has been claimed.
 
-`Stereo_SAD_RightShift.qpf` passed Analysis & Synthesis with zero errors, zero warnings and 2883 logic cells before fitting. Its thousands of top-level tap output bits are an internal-bus abstraction; this is not a physically assignable board top. The matching left delay and frontend integration remain separate work.
+`Stereo_SAD_RightShift.qpf` passed Analysis & Synthesis with zero errors, zero warnings and 2883 logic cells before fitting. Its wide tap output is an internal-bus abstraction, not a board pinout. `Stereo_SAD_LeftDelay.qpf` passed with zero errors/warnings and 90 logic cells. Complete row-buffer/engine frontend integration remains separate work.
 
 The separate default 32-lane comparator component passed Quartus Analysis & Synthesis: zero errors, one processor-count warning, 1622 logic cells before fitting. It does not demonstrate multi-engine timing or integrated winner-take-all image output.
 

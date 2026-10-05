@@ -22,6 +22,8 @@ jobs:
         run: python scripts/run_tests.py
       - name: Check testbench fault sensitivity
         run: python scripts/check_test_sensitivity.py
+      - name: Exercise teaching bench and compiled fault detection
+        run: python scripts/run_testbench_lab.py --check-faults
       - name: Upload simulation results
         if: always()
         uses: actions/upload-artifact@v4
@@ -30,6 +32,9 @@ jobs:
           path: |
             sim/*.txt
             tests/rtl/*.sv
+            tests/lab/*.sv
+            build/lab/*.log
+            build/lab/reference.vcd
             build/legacy-buffer/k*/tb.sv
             build/mutation-checks/*/result.txt
           if-no-files-found: warn

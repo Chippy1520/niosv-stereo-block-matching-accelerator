@@ -30,18 +30,20 @@ SUITES = {
     'row': ('tb_circular_row_buffer', ['circular_row_buffer.sv']),
     'comparator': ('tb_comparator_tree', ['comparator_tree.sv']),
     'shift': ('tb_right_column_shift', ['right_column_shift.sv']),
+    'delay': ('tb_left_column_delay', ['left_column_delay.sv']),
+    'pairing': ('tb_column_pairing', ['left_column_delay.sv', 'right_column_shift.sv']),
 }
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--suite', choices=['all', 'column', 'buffer', 'engine', 'row', 'comparator', 'shift', 'legacy'], default='all')
-    parser.add_argument('--case', metavar='K:PIXEL_BITS[:W]', help='One parameter case (N:SAD_BITS for comparator). W is row width or shift tap count; shift defaults to 32 taps.')
+    parser.add_argument('--suite', choices=['all', *SUITES, 'legacy'], default='all')
+    parser.add_argument('--case', metavar='K:PIXEL_BITS[:W]', help='One parameter case (N:SAD_BITS for comparator). W is row width or shift/pairing tap count; individual shift/pairing suites default to 32 taps.')
     parser.add_argument('--random-cycles', type=int, default=2000)
     parser.add_argument('--seed', type=int, help='Nonzero 32-bit xorshift seed')
     parser.add_argument('--vcd', action='store_true', help='Write waveform.vcd per standalone test case')
     args = parser.parse_args()
-    width = 32 if args.suite == 'shift' else 8
+    width = 32 if args.suite in ('shift', 'pairing') else 8
     cases = MATRIX
     if args.case:
         try:
@@ -90,13 +92,13 @@ def main():
     for suite in names:
         top, sources = SUITES[suite]
         suite_cases = ROW_MATRIX if suite == 'row' and not args.case else (
-            SHIFT_MATRIX if suite == 'shift' and not args.case else
+            SHIFT_MATRIX if suite in ('shift', 'pairing') and not args.case else
             [(n, bits, width) for n, bits in COMPARATOR_MATRIX]
             if suite == 'comparator' and not args.case else
             [(k, p, width) for k, p in cases])
         for k, p, w in suite_cases:
             label = f'n{k}_sad{p}' if suite == 'comparator' else (
-                f'k{k}_p{p}_t{w}' if suite == 'shift' else
+                f'k{k}_p{p}_t{w}' if suite in ('shift', 'pairing') else
                 f'k{k}_p{p}_w{w}' if suite == 'row' else f'k{k}_p{p}')
             case = ROOT / 'build' / suite / label
             case.mkdir(parents=True, exist_ok=True)
@@ -104,7 +106,7 @@ def main():
                 f'-P{top}.K={k}', f'-P{top}.P={p}']
             if suite == 'row':
                 parameters.append(f'-P{top}.W={w}')
-            elif suite == 'shift':
+            elif suite in ('shift', 'pairing'):
                 parameters.append(f'-P{top}.T={w}')
             run([compiler, '-g2012', '-Wall', '-s', top, *parameters, '-o', 'sim.vvp',
                  *(str(ROOT / 'rtl' / name) for name in sources),

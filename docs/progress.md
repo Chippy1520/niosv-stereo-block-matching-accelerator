@@ -1,6 +1,17 @@
 # Progress log
 
-## Current milestone — standalone right-column shift register
+## Current milestone — left delay, pairing verification and hands-on testbench lab
+
+- [x] Implement `rtl/left_column_delay.sv`: one whole-column sampling register, registered valid, pause hold and synchronous reset/clear priority.
+- [x] Deliver exact-code [[Left Column Delay]] walkthrough and independently scored `tb_left_column_delay.sv`; verify standalone before local pairing.
+- [x] Verify delay/cache pairing after registration and at the next consumer edge in `tb_column_pairing.sv`; no new functional wrapper.
+- [x] Run 70 full regression cases and 12 production fault checks. Teaching baseline: seven directed beats; two compiled DUT faults detected without editing real RTL.
+- [x] Quartus Lite 22.1 Analysis & Synthesis: zero errors/warnings and 90 logic cells before fitting. [Evidence](verification/left-delay-synthesis.md).
+- [x] Prepare [[Hands-on Testbench Lab]], editable scratch-copy workflow, standalone teaching bench, Icarus helper and Questa macro.
+- [x] Actually exercise beginner lab and all eight macro-selected component/pairing cases in Questa Intel Starter Edition 2021.2.
+- [ ] User works through individual bench-writing/part-testing sessions; then agree metadata/border/drain control and start frontend/bank/top-level wrapper. That hardware integration is not included here.
+
+## Previous milestone — standalone right-column shift register
 
 - [x] Implement `rtl/right_column_shift.sv`: shift whole K-pixel columns only on accepted input; registered taps have per-disparity warmup validity.
 - [x] Preserve history across pauses, suppress bubble validity, and discard simultaneous input on reset/clear. Caller clears horizontal history between output rows.
