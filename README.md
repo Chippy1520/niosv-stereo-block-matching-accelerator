@@ -117,7 +117,7 @@ python scripts/run_tests.py --suite shift --case 11:8:32 --vcd
 
 Windows may alternatively use the local, untracked portable installation at `tools/mingw64/bin/`. No third-party Python packages are required by these tests. Standalone SV benches are tracked in `tests/rtl/`. Compiled simulations, optional waveforms and legacy vectors are generated in `build/`; results go to `sim/results.txt`. See the testbench guide for parameter matrices and extra seeds.
 
-GitHub Actions reruns all checks for every push and pull request. Simulation output is available as a workflow artifact. Cloud CI does not run Quartus or board hardware tests. Every new functional RTL module must arrive with its code-adjacent walkthrough and standalone self-checking bench, registered in the runner; `check_walkthrough.py` rejects missing coverage.
+GitHub Actions reruns the canonical walkthrough, regression, fault-sensitivity and teaching checks for every push and pull request. Simulation output is available as a workflow artifact. The standalone independent replay is separately run; cloud CI does not run it, Quartus or board hardware tests. Every new functional RTL module must arrive with its code-adjacent walkthrough and standalone self-checking bench, registered in the runner; `check_walkthrough.py` rejects missing coverage.
 
 ### Open in Obsidian
 
@@ -138,7 +138,7 @@ VGA display (optional) ────────────┘               ↕
                                             → shared-SDRAM output writeback
 ```
 
-[[Module Blocks.canvas]] and [[Accelerator Blocks.canvas]] distinguish the current compute components from future system integration; [[SAD Engine Blocks.canvas]] details the implemented single-lane wrapper. The original [[Paper System Plan.canvas]] and [[Paper Design Plan.canvas]] preserve intended system/accelerator layouts. Ethernet packet staging and VGA display remain optional and unimplemented. `P_LANES` is a compile-time choice: fewer lanes over a larger search range require unimplemented replay/group scheduling and best-state merging.
+[System map](System/Module%20Blocks.canvas) and [accelerator map](Accelerator/Accelerator%20Blocks.canvas) distinguish the current compute components from future system integration; the [SAD engine map](Accelerator/Engine/SAD%20Engine%20Blocks.canvas) details the implemented single-lane wrapper. The original [whole-system paper plan](System/Paper%20System%20Plan.canvas) and [accelerator paper plan](Accelerator/Paper%20Design%20Plan.canvas) preserve intended system/accelerator layouts. Ethernet packet staging and VGA display remain optional and unimplemented. `P_LANES` is a compile-time choice: fewer lanes over a larger search range require unimplemented replay/group scheduling and best-state merging.
 The history buffer updates `H_next = H - oldest + newest`; it must retain outgoing values, not just H. The registered SAD is `H + newest` using the pre-update H. Kernel size is currently a synthesis-time parameter. Clear discards a simultaneous valid input and flushes all pending engine work. For normal row boundaries, drain ceil(log2(K))+1 invalid-input clock edges before asserting clear on a separate edge. Coordinates, borders and lane validity require integration-level control.
 
 The shared-SDRAM system proposal remains an integration goal; its implementation is not implied by the working buffer.
