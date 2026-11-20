@@ -9,6 +9,12 @@ runner = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(runner)
 SUITES = runner.SUITES
 MODULES = {
+    'sad_search_backend': ('Accelerator/SAD Search Backend.md', 'search'),
+    'stereo_sad_datapath': ('Accelerator/Stereo SAD Datapath.md', 'datapath'),
+    'row_word_bank': ('Accelerator/Frontend/Row Word Bank.md', 'word-bank'),
+    'packed_circular_row_buffer': ('Accelerator/Frontend/Packed Circular Row Buffer.md', 'packed-row'),
+    'stereo_frontend': ('Accelerator/Frontend/Stereo Frontend - Code Walkthrough.md', 'frontend'),
+    'row_ram_bank': ('Accelerator/Frontend/Row RAM Bank.md', 'row-bank'),
     'circular_row_buffer': ('Accelerator/Frontend/Circular Row Buffer.md', 'row'),
     'column_sad': ('Accelerator/Engine/Pipelined Column SAD Calculator.md', 'column'),
     'column_sum_buffer': ('Accelerator/Engine/Column Sum Buffer - Code Walkthrough.md', 'buffer'),

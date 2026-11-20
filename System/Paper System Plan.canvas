@@ -1,0 +1,151 @@
+{
+  "nodes": [
+    {
+      "id": "paper-plan-provenance",
+      "type": "text",
+      "x": -70,
+      "y": -640,
+      "width": 1900,
+      "height": 200,
+      "text": "## Paper design · historical whole-system plan\n\nOriginal layout, connections and old status labels are preserved, not a current checklist. Nios V, accelerator, Ethernet/VGA and shared SDRAM show intended integration, NOT board completion. The compute path now exists; use [[Project Plan]] for current status.\n\n[[Paper Design Plan.canvas|Open full accelerator paper plan]]"
+    },
+    {
+      "id": "legend",
+      "type": "text",
+      "text": "## System view · planned integration\n\nShared SDRAM is the source of left/right frames and the destination of the disparity map. Arrows show intended transactions, NOT completed board wiring.\n[[Paper Design Plan.canvas|Open accelerator internals]]",
+      "x": -70,
+      "y": -380,
+      "width": 790,
+      "height": 220,
+      "color": "5"
+    },
+    {
+      "id": "ethernet",
+      "type": "text",
+      "text": "## Ethernet controller\n\nHost/frame ingress (optional). CPU-facing peripheral; how payloads reach SDRAM (CPU copy vs DMA) remains a design choice.",
+      "x": -50,
+      "y": 0,
+      "width": 380,
+      "height": 235,
+      "color": "2"
+    },
+    {
+      "id": "cpu",
+      "type": "text",
+      "text": "## Nios V processor\n\nDataset/CPU baseline, accelerator configuration, launch and result checking. Separate Hello World proven; THIS combined system is not integrated.",
+      "x": 485,
+      "y": 0,
+      "width": 405,
+      "height": 235,
+      "color": "2"
+    },
+    {
+      "id": "accelerator",
+      "type": "text",
+      "text": "## Stereo SAD accelerator IP\n\nPlanned CSR slave + autonomous memory master; reads stereo frames, writes disparity results. Only component datapath RTL is implemented.\n[[Paper Design Plan.canvas|Open accelerator internals]]",
+      "x": 2000,
+      "y": 807,
+      "width": 470,
+      "height": 270,
+      "color": "2"
+    },
+    {
+      "id": "vga",
+      "type": "text",
+      "text": "## VGA controller\n\nOptional display path: read a completed disparity framebuffer from shared SDRAM and drive VGA. Not in benchmark timing.",
+      "x": 1680,
+      "y": -117,
+      "width": 410,
+      "height": 235,
+      "color": "2"
+    },
+    {
+      "id": "bus",
+      "type": "text",
+      "text": "## Platform Designer interconnect\n\nAddress decode + arbitration + protocol adaptation. CPU and accelerator reach the SAME SDRAM address space.",
+      "x": 790,
+      "y": 480,
+      "width": 560,
+      "height": 245,
+      "color": "2"
+    },
+    {
+      "id": "sdram-controller",
+      "type": "text",
+      "text": "## External SDRAM controller\n\nConverts shared-memory transactions to DE2-115 SDRAM pins/timing. Not integrated in this checkout.",
+      "x": 790,
+      "y": 849,
+      "width": 480,
+      "height": 185,
+      "color": "2"
+    },
+    {
+      "id": "sdram",
+      "type": "text",
+      "text": "## Physical SDRAM · shared frame store\n\nLeft/right frames, optional best-state workspace, disparity output. CPU and accelerator use the same address map.",
+      "x": 790,
+      "y": 1280,
+      "width": 480,
+      "height": 205,
+      "color": "6"
+    }
+  ],
+  "edges": [
+    {
+      "id": "eth-bus",
+      "fromNode": "ethernet",
+      "fromSide": "bottom",
+      "toNode": "bus",
+      "toSide": "left",
+      "label": "MMIO/status; frame ingress staging TBD"
+    },
+    {
+      "id": "cpu-bus",
+      "fromNode": "cpu",
+      "fromSide": "bottom",
+      "toNode": "bus",
+      "toSide": "top",
+      "label": "CPU memory + CSR transactions"
+    },
+    {
+      "id": "vga-bus",
+      "fromNode": "vga",
+      "fromSide": "bottom",
+      "toNode": "bus",
+      "toSide": "right",
+      "label": "optional framebuffer reads"
+    },
+    {
+      "id": "bus-accel-csr",
+      "fromNode": "bus",
+      "fromSide": "right",
+      "toNode": "accelerator",
+      "toSide": "left",
+      "label": "CPU configuration/status via CSR"
+    },
+    {
+      "id": "accel-bus-master",
+      "fromNode": "accelerator",
+      "fromSide": "left",
+      "toNode": "bus",
+      "toSide": "right",
+      "label": "accelerator memory-master reads/writes"
+    },
+    {
+      "id": "bus-sdram",
+      "fromNode": "bus",
+      "fromSide": "bottom",
+      "toNode": "sdram-controller",
+      "toSide": "top",
+      "label": "arbitrated shared-memory requests"
+    },
+    {
+      "id": "controller-dram",
+      "fromNode": "sdram-controller",
+      "fromSide": "bottom",
+      "toNode": "sdram",
+      "toSide": "top",
+      "label": "SDRAM command/data"
+    }
+  ]
+}

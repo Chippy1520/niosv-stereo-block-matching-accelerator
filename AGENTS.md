@@ -2,6 +2,7 @@
 
 ## Scope and authoritative artifacts
 - SystemVerilog stereo SAD accelerator on DE2-115. Implement one verified stage at a time.
+- Keep the design fundamental: aggregate cohesive logic; no unnecessary FIFOs, forwarding wrappers or module sprawl. Use agent-council before architectural choices, identify whether review is lightweight or independent, and prefer a small measured experiment over speculative abstraction. Do not claim a "perfect" partition without evidence.
 - Root is both the source project and Obsidian vault. Preserve meaningful links and existing planning reports.
 - `rtl/*.sv` files are the source of truth; every new functional HDL module must be delivered in the same milestone with (1) one Obsidian code walkthrough whose first SystemVerilog block embeds the exact full RTL and explains the design line beside its code, and (2) a standalone self-checking `tests/rtl/tb_<module>.sv` registered in `scripts/run_tests.py`. Add the mapping to `scripts/check_walkthrough.py`; its CI coverage check rejects unregistered RTL. The fixed-width synthesis smoke top is the documented exception, not a new functional datapath.
 - Keep the vault's system → accelerator → frontend/engine → module hierarchy and its hub-note links intact; folders alone do not create Obsidian Graph edges.

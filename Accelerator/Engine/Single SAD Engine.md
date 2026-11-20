@@ -1,7 +1,7 @@
 # Single SAD Engine
 #implemented
 
-[[Home]] · [[Pipelined Column SAD Calculator]] · [[Column Sum Buffer]] · [[Testbench Guide]] · [[Disparity Bank]]
+[[Home]] · [[Pipelined Column SAD Calculator]] · [[Column Sum Buffer]] · [[Testbench Guide]] · [[Project Plan#Disparity bank|disparity-bank plan]]
 
 Source: [rtl/sad_engine.sv](../../rtl/sad_engine.sv). Standalone bench: [tb_sad_engine.sv](../../tests/rtl/tb_sad_engine.sv).
 
@@ -243,4 +243,4 @@ python scripts/run_tests.py --suite engine
 python scripts/run_tests.py --suite engine --case 11:8 --seed 12345 --random-cycles 5000 --vcd
 ```
 
-Open **Stereo_SAD_Engine.qpf** for component synthesis. The original **Stereo_SAD.qpf** remains the buffer-only project. See [[Hardware Integration]] for synthesis results and limitations.
+Open **Stereo_SAD_Engine.qpf** for component synthesis. The original **Stereo_SAD.qpf** remains the buffer-only project. See [[Verification]] for synthesis results and limitations; [[Project Plan]] holds future board integration.

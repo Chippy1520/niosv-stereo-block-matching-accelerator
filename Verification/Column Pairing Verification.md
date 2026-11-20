@@ -33,7 +33,7 @@ On a pause, a consumer may still take the final prior beat at that edge; afterwa
 | clear | zero | all zero | 000 |
 | next row x=0 | new L0 | new R0 / empty / empty | 001 |
 
-A valid right tap is not a valid full SAD window. Lane d would need K accepted pairs; its first complete horizontal window ends at x=d+K−1. The bank's global border policy is still a later design gate.
+A valid right tap is not a valid full SAD window. Lane d needs K accepted pairs; its first complete horizontal window ends at x=d+K−1. [[SAD Search Backend]] now applies the fixed search's common-interior policy; this local pairing bench does not score that policy.
 
 ## Reproduce
 
@@ -46,13 +46,12 @@ python scripts/run_tests.py --suite pairing --case 3:8:3 --seed 12345 --random-c
 
 Open `build/pairing/k3_p8_t3/waveform.vcd`. In Questa, use `set part pairing` and the tested macro described in [[Hands-on Testbench Lab]]. Eight pairing cases share the right-shift matrix, including single taps, odd depths and the default 32 taps. The consumer counter is lane-pair observations, not pixels/second or throughput.
 
-## What remains before the top-level wrapper
+## Beyond this local bench
 
-- Both row-buffer outputs must refer to the same (x,y), and paired input stalls must be shared.
-- Coordinates/row-last need alignment matching the payload register.
-- Choose common-interior versus per-lane border masks before scoring.
-- Drain from the correct boundary: the engine-only drain remains ceil(log2(K))+1 edges after its final accepted input, followed by a separate clear. Draining from upstream must include frontend handoff edges.
-- Keep row-buffer vertical history while clearing the right cache and engine horizontal histories.
-- Feed and verify actual engines, winner reduction, controller and transport under a separate wrapper milestone.
+- [[Stereo Frontend]] separately tests both packed-store columns at the same (x,y), registered payload/tag alignment and independent loads with shared paired reads.
+- [[SAD Search Backend]] separately tests actual engines, common-interior qualification and winner reduction.
+- [[Stereo SAD Datapath]] tests that connected compute path against complete raw-pixel windows, including the larger upstream-to-winner drain and separate clear edge.
+- The engine-only drain remains ceil(log2(K))+1 edges after its final accepted input; it is not the full-path drain. Preserve active vertical rows while clearing horizontal history.
+- Autonomous controller, transport and board verification remain future work in [[Project Plan]].
 
-This bench verifies local left/right column pairing, not those later integration items.
+This bench remains intentionally local; it does not inherit those other benches' coverage or prove autonomous control.

@@ -8,7 +8,7 @@ permissions:
 jobs:
   simulate:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 45 # Full-height storage plus full-width raw-window compute checks.
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -32,10 +32,14 @@ jobs:
           path: |
             sim/*.txt
             tests/rtl/*.sv
+            tests/rtl/*.svh
             tests/lab/*.sv
             build/lab/*.log
             build/lab/reference.vcd
             build/lab/datapath_examples.vcd
             build/legacy-buffer/k*/tb.sv
             build/mutation-checks/*/result.txt
+            build/control/**/control_*.csv
+            build/control-sensitivity/**/result.txt
+            build/control-sensitivity/evidence.json
           if-no-files-found: warn

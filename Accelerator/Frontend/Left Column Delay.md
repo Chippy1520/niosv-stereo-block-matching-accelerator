@@ -1,13 +1,13 @@
 # Left Column Delay
 #implemented #verified
 
-[[Stereo Frontend]] → [[Right Column Shift Register]] / [[Left Column Delay]] → [[Column Pairing Verification]] → [[Single SAD Engine]] (engine hookup remains planned).
+[[Stereo Frontend]] → **this left register** / [[Right Column Shift Register]] → [[SAD Search Backend]]. [[Column Pairing Verification]] checks the local pair; [[Stereo SAD Datapath]] checks its actual compute integration.
 
 ## Pre-RTL contract
 
 | Item | Contract |
 |---|---|
-| Purpose | Give L[x] the same sampling register as right tap Q[0]; broadcast this L[x] to all future disparity lanes |
+| Purpose | Give L[x] the same sampling register as right tap Q[0]; broadcast this L[x] to the fixed-disparity lanes |
 | Parameters | K=11, PIXEL_W=8; both positive compile-time integers |
 | Input | clk, synchronous active-low rst_n, clear_i, valid_i, column_i[K*PIXEL_W−1:0] |
 | Output | valid_o, column_o of the same whole-column width |
@@ -150,4 +150,4 @@ Component synthesis project: `Stereo_SAD_LeftDelay.qpf`; [observed synthesis](..
 
 ## Next gate, not hidden work
 
-[[Hands-on Testbench Lab]] prepares the existing modules for individual study. After that: agree border/coordinate policy and drain/clear control, then assemble and verify the frontend/bank/top-level wrapper. Coordinate and row-last metadata need matching registered alignment; this payload-only module does not manufacture tags. Keep vertical row-buffer history when clearing horizontal state.
+[[Hands-on Testbench Lab]] prepares the existing modules for individual study. The frontend/bank/compute composition now exists: [[Stereo Frontend]] aligns coordinate/row-last metadata and [[SAD Search Backend]] carries winner tags; this payload-only module does not manufacture them. Review those wrappers rather than building duplicates. Autonomous control/transport remain separate gates. Keep active vertical rows intact when clearing horizontal state.

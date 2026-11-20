@@ -2,7 +2,7 @@
 #implemented
 
 [[Home]] → [[Accelerator Architecture]] → [[Stereo Frontend]] → this module.
-[[Disparity Bank]] · [[Circular Row Buffer]] · [[Testbench Guide]]
+[[Project Plan#Disparity bank|disparity-bank plan]] · [[Circular Row Buffer]] · [[Testbench Guide]]
 
 Source: [right_column_shift.sv](../../rtl/right_column_shift.sv). Independent bench: [tb_right_column_shift.sv](../../tests/rtl/tb_right_column_shift.sv).
 
@@ -17,8 +17,8 @@ right row buffer → R[x] + valid → Q[0] → Q[1] → ... → Q[TAPS−1]
                                 R[x]   R[x−1]       R[x−(TAPS−1)]
                                 │       │             │
                                 └──── direct disparity taps ────┘
-left row buffer → matching one-register left alignment (NEXT, not implemented)
-                                → pair L[x] with Q[d] → engine d (planned)
+left row buffer → matching one-register left alignment
+                                → pair L[x] with Q[d] → engine d
 ```
 
 ## Pre-RTL contract and boundaries
@@ -251,8 +251,8 @@ python scripts/check_test_sensitivity.py
 
 `--case K:P:T` overrides tap count; a shift-only `K:P` case defaults to 32 taps. Fault checks deliberately shift during pauses, ignore occupancy, and ignore clear; the real RTL is not mutated.
 
-Open `Stereo_SAD_RightShift.qpf` for component Analysis & Synthesis. [Synthesis evidence](../../docs/verification/right-shift-synthesis.md) describes observed resources and limits. This component synthesis does not establish fitted timing, full frontend integration, bank throughput or board success; left alignment has its own bench below. Existing frontend canvases still describe the planned assembly; their local layouts are not changed by this standalone milestone.
+Open `Stereo_SAD_RightShift.qpf` for component Analysis & Synthesis. [Synthesis evidence](../../docs/verification/right-shift-synthesis.md) describes observed resources and limits. That component run does not establish integration, fitted timing, bank throughput or board success. The implemented frontend/compute path has separate evidence in [[Verification]]; existing canvas layouts are preserved.
 
 ## Next integration gate
 
-[[Left Column Delay]] now implements the matching left-column/valid register. [[Column Pairing Verification]] verifies the two modules together without a functional wrapper; coordinates, border policy, row-buffer/engine assembly and controller timing remain later gates. Work through [[Hands-on Testbench Lab]] before that wrapper. The row controller must account for the frontend register handoff when draining from the row-buffer side; the existing engine-only drain contract is measured at engine inputs, not upstream of this cache. Keep vertical row-buffer history while clearing horizontal cache/engine history between output rows.
+[[Left Column Delay]] supplies the matching left-column/valid register. [[Column Pairing Verification]] checks the local pair; [[Stereo Frontend]] and [[Stereo SAD Datapath]] now implement and test packed storage, aligned tags, engines and winner reduction. Use [[Hands-on Testbench Lab]] to study each component before reviewing that integration. Autonomous row/frame control and transport remain later gates: count drain from the actual input boundary, not only engine inputs, then clear horizontal history on a separate edge while preserving active vertical rows.

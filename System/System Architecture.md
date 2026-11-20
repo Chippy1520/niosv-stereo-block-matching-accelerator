@@ -1,11 +1,11 @@
 # System architecture
 
-Whole-system partition (planned): [[Module Blocks.canvas|System blocks]]. The accelerator below is a subsystem, not the whole board system.
+[[Home]] → [[Module Blocks.canvas|System map]]
 
-- [[Nios V Interface]] — processor and control.
-- [[Hardware Integration]] — board, SDRAM and platform.
-- [[Interface Contract]] — external and inter-stage contracts.
-- [[docs/design_hierarchy|Top-down design hierarchy]] and [[docs/integration_checklist|integration gates]] — project-wide plans.
-- [[docs/resources|Reference resources]] and [[docs/progress|Progress log]] — supporting context.
-- [[Accelerator Architecture]] — enter the accelerator.
-- [[Home]] — project dashboard.
+- **[[Project Plan]]** — the complete future system, frontend/bank contracts, Nios V/SDRAM integration and acceptance gates. No separate unimplemented-module notes.
+- **[[Accelerator Architecture]]** — implemented datapath components and their nested explanations.
+- [[Datapath Study Guide]] — module-by-module learning route.
+- [[Verification Map]] — benches and evidence; component synthesis is not board integration.
+- [[docs/progress|Progress log]] and [[docs/resources|Reference resources]].
+
+The accelerator is a subsystem of the intended board system, not an already-integrated CPU/memory/display design. Detailed planning reports are linked from the main plan rather than presented as extra implemented modules.

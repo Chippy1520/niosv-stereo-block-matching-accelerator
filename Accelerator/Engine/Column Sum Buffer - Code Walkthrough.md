@@ -8,7 +8,7 @@ aliases:
 
 # Column Sum Buffer — Code Walkthrough
 
-[[Home]] · [[Column Sum Buffer]] · [[Rolling SAD Math]] · [[Interface Contract]] · [[Verification]]
+[[Home]] · [[Column Sum Buffer]] · [[Rolling SAD Math]] · [[Column Sum Buffer#Interface contract|buffer interface contract]] · [[Verification]]
 
 This note contains the complete `rtl/column_sum_buffer.sv` source, its line-by-line explanation, a worked example, and a comparison against the proposed stereo SAD architecture.
 
@@ -150,7 +150,7 @@ For one disparity engine:
                    Full 11×11 SAD
 ```
 
-Each of the 32 disparity engines needs its **own independent history**. The multi-engine wrapper is a later stage: [[Disparity Bank]].
+Each of the 32 disparity engines needs its **own independent history**. The multi-engine wrapper is a later stage: [[Project Plan#Disparity bank|disparity-bank plan]].
 
 ## 2. File setup — lines 1–6
 
@@ -670,7 +670,7 @@ If Nios V must change it while the FPGA runs, the design needs:
 - Width sizing for the supported maximum.
 - Clear/restart behavior when configuration changes.
 
-See [[Nios V Interface]].
+See [[Project Plan#Nios V and board integration|platform integration plan]].
 
 ## Conclusion
 
@@ -711,10 +711,10 @@ The output for `C2` uses the **old** `history_sum` at that edge; the recurrence 
 
 - [[Column Sum Buffer]] — implementation overview and bit widths.
 - [[Rolling SAD Math]] — stereo indexing and recurrence.
-- [[Interface Contract]] — reset, clear, validity and acceptance rules.
-- [[Column SAD Engines]] — upstream absolute differences and adder tree.
-- [[Image Line Buffers]] — vertical image storage, separate from this ring.
-- [[Disparity Bank]] — independent state per disparity.
+- [[Column Sum Buffer#Interface contract|buffer interface contract]] — reset, clear, validity and acceptance rules.
+- [[Pipelined Column SAD Calculator|Pipelined Column SAD Calculator]] — upstream absolute differences and adder tree.
+- [[Circular Row Buffer|Circular Row Buffer]] — vertical image storage, separate from this ring.
+- [[Project Plan#Disparity bank|disparity-bank plan]] — independent state per disparity.
 - [[Minimum Comparator Tree]] — standalone best-match selector; bank integration pending.
 - [[Timing and Pipelining]] — feedback and pipeline caveats.
 - [[Verification]] — simulation and synthesis evidence.

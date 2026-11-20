@@ -1,49 +1,38 @@
-# Stereo SAD FPGA — project dashboard
+# Stereo SAD FPGA
 
-Board: DE2-115 / Cyclone IV. Language: SystemVerilog. Processor target: Nios V.
-Assumption: grayscale pixels are 8-bit, image width 640 and height 480; confirm image orientation before integration.
+**DE2-115 · SystemVerilog · Nios V integration target**
 
-## Current milestone
-- [x] Implement [[Column Sum Buffer]] for one disparity lane.
-- [x] Exercise RTL using independent reference vectors; see [[Verification]].
-- [x] Create linked notes, graph and [[Architecture.canvas|architecture canvas]].
-- [x] Quartus Analysis & Synthesis (`Stereo_SAD.qpf`, Lite 22.1).
-- [ ] Fitting and fully constrained timing analysis.
-- [x] Document drain → clear → restart row boundaries in [[Single SAD Engine]].
-- [ ] Agree runtime configuration and future overlap/metadata requirements.
-- [x] Implement [[Pipelined Column SAD Calculator]] and its standalone testbench.
-- [x] Add a standalone SystemVerilog testbench for [[Column Sum Buffer]].
-- [x] Integrate [[Single SAD Engine]] and verify direct raw-pixel window results.
-- [x] Synthesize the engine (`Stereo_SAD_Engine.qpf`) with zero errors/warnings.
-- [x] Implement [[Circular Row Buffer]] — one image, K-row ring, vertical column out.
-- [x] Implement and verify [[Minimum Comparator Tree]] as a standalone pipelined component; [[Minimum Comparator Tree - Code Walkthrough|read its exact code and timing]].
-- [x] Implement and verify [[Right Column Shift Register]] as a standalone whole-column cache.
-- [x] Implement [[Left Column Delay]] and verify local [[Column Pairing Verification|left/right pairing]].
-- [x] Prepare [[Hands-on Testbench Lab]] with runnable beginner bench and tested Questa commands.
-- [x] Prepare [[Datapath Study Guide]]: implementation, widths, edge timing and independent test plans for every implemented datapath module, with runnable small examples.
-- [ ] Work through the hands-on individual-part sessions before the new top-level wrapper.
-- [ ] Disparity alignment, then connect the row buffers to [[Single SAD Engine]].
-- [ ] Implement [[Disparity Bank]] and connect its aligned lanes to [[Minimum Comparator Tree]].
-- [ ] Integrate [[Nios V Interface]] and board system.
+## Start here
 
-## Navigate
-**[[Datapath Study Guide|Study every datapath module: implementation → timing → tests]]**
+| I want to… | Open |
+|---|---|
+| Share the current project with teammates | [[docs/team-handoff|Teammate handoff]] |
+| Understand the whole project | [[System Architecture]] |
+| See what is built and what comes next | [[Project Plan]] |
+| Study modules, ports and clock timing | [[Datapath Study Guide]] |
+| Write and run a small testbench | [[Hands-on Testbench Lab]] |
+| Check evidence and remaining gaps | [[Integration Readiness]] · [[Verification]] |
 
-[GitHub repository](https://github.com/Chippy1520/niosv-stereo-block-matching-accelerator) · [[docs/github-workflow|Update workflow]]
+## Current checkpoint
 
-**Graph spine:** [[System Architecture]] → [[Accelerator Architecture]] → [[Stereo Frontend]] / [[SAD Engine Architecture]] → [[Verification Map]]. These links create the hierarchy in Obsidian Graph; folders alone do not.
+The **packed-load frontend and full fixed-search compute datapath are implemented**: spare-row storage → aligned columns → SAD engines → tagged minimum-cost/disparity output. Readiness, row ownership and no-copy bank promotion remain caller-controlled.
 
-[[Column Sum Buffer - Code Walkthrough|Code, line-by-line explanation, and examples]]
+**Next: interactive module-by-module simplification review and control planning.** A central FSM with distributed local controllers is the direction; one controller covers each complete PE. No controller RTL or visual Quartus design files exist yet. CPU/SDRAM transport, fitted timing and board integration are not established. The user has authorized sharing the current project snapshot, not marking these gates complete.
 
-[[Pipelined Column SAD Calculator]] · [[Single SAD Engine]] · [[Circular Row Buffer]] · [[Minimum Comparator Tree - Code Walkthrough]] · [[Testbench Guide]]
+## Architecture and explanations
 
-[[Right Column Shift Register]] — right disparity taps, validity and pause/clear timing.
+**[[System Architecture]] → [[Accelerator Architecture]] → [[Stereo Frontend]] / [[SAD Engine Architecture]] → module explanations.** These links create the Obsidian Graph hierarchy; folders alone do not.
 
-[[Left Column Delay]] · [[Column Pairing Verification]] · **[[Hands-on Testbench Lab|Start the practical bench-writing session]]**
+Open [[Architecture.canvas|the note map]] or follow the subsystem hubs for their block canvases. The study guide is the module/source/bench index; Home does not duplicate that catalogue.
 
-[[Architecture.canvas]] · [[Module Blocks.canvas|System blocks]] · [[Accelerator Blocks.canvas|Accelerator blocks]] · [[Stereo Frontend Blocks.canvas|Row buffers and taps]] · [[SAD Engine Blocks.canvas|One engine]] · [[Rolling SAD Math]] · [[Interface Contract]] · [[Timing and Pipelining]] · [[Hardware Integration]]
+## Plans, evidence and history
 
-The vault root is also the source project root. Open graph using Ctrl+G.
-RTL: [column_sum_buffer.sv](rtl/column_sum_buffer.sv)
-Test runner: [run_tests.py](scripts/run_tests.py)
-No community plugins required. The row buffer, calculator, history buffer, single engine and standalone comparator are independently tested. Open [[Module Blocks.canvas]] for the planned Nios V / shared-SDRAM / Ethernet / VGA system, then [[Accelerator Blocks.canvas]] for the accelerator's internal flow. Disparity alignment, memory transport and the multi-lane bank remain planned.
+- **Intended system:** [[Paper Design Plan.canvas|Original accelerator plan]] · [[Paper System Plan.canvas|Original whole-system plan]]. Preserved designs, not implementation evidence.
+- **Checks:** [[Verification Map]] · [[Testbench Guide]] · [[Control Emulation|whole-path control-emulation tests]]. Current and historical evidence are separated in [[Verification]].
+- **Records:** [[docs/progress|Progress log]] · [[docs/resources|Resources]] · [[docs/github-workflow|Publishing workflow]].
+
+[GitHub repository](https://github.com/Chippy1520/niosv-stereo-block-matching-accelerator)
+
+## Using the vault
+
+The repository root is also the vault root. Follow the hub links above or open Graph with Ctrl+G. Historical audits remain linked and labelled. No community plugins are required. Recent personal bookmarks, search/Graph filters, appearance and local navigation CSS changes are not published; teammates can choose their own settings without changing the project sources or diagrams.

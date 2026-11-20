@@ -2,7 +2,7 @@
 
 [[Home]] → [[Verification Map]] → this hands-on session. References: [[Datapath Study Guide|Module-by-module implementation and testing guide]], [[Testbench Guide]], [[Left Column Delay]], [[Right Column Shift Register]], [[Column Pairing Verification]].
 
-> **Goal:** you write and understand a self-checking bench, not just press Run on someone else's tests. Start with a one-byte delay, then test every existing component separately. Only after these checkpoints do we start the frontend/bank/top-level wrapper. This guide is preparation; completing it is your learning session, not something CI can do for you.
+> **Goal:** you write and understand a self-checking bench, not just press Run on someone else's tests. Start with a one-byte delay, then test components separately before studying the existing frontend/backend/complete compute composition. This is your learning route, not an implementation status tracker; CI cannot complete the sessions for you.
 
 ## Learning route
 
@@ -11,7 +11,7 @@
 | 1 | Left delay: DUT, clock, reset, directed stimulus, assertions, waveform | A tiny bench you can explain line by line |
 | 2 | Right taps and image row buffer | Separate horizontal history from vertical history; prove pause and warmup |
 | 3 | Column SAD, column-history buffer, comparator | Independent arithmetic references, width limits, pipeline scoreboards |
-| 4 | Existing single engine and column pairing | Prove wiring/timing from original inputs, then prepare the wrapper contract |
+| 4 | Existing single engine and column pairing | Prove wiring/timing from original inputs, then review the implemented composition and its contract |
 
 Do one session at a time. Keep predictions, actual traces and failure explanations beside the relevant module note. No slides or extra Obsidian plugins are needed.
 
@@ -281,7 +281,7 @@ After directed tests, rerun one case with `--seed 12345 --random-cycles 10000`. 
 
 Do not add random `#` delays until the failure disappears; model the actual sampling contract. Do not weaken an assertion to silence an unknown value.
 
-## 10. Completion gate before the new wrapper
+## 10. Learning checkpoint before reviewing integration
 
 - [ ] I wrote a scratch self-checking delay bench and can explain every line.
 - [ ] I predicted the pause/clear/reset trace and checked it in a waveform.
@@ -292,7 +292,7 @@ Do not add random `#` delays until the failure disappears; model the actual samp
 - [ ] I understand why left/right pairing has both post-edge and consumer-edge checks.
 - [ ] We have agreed coordinate/border validity, metadata alignment, and drain → clear → restart at the intended wrapper boundary.
 
-Bring your first scratch bench or a waveform/failure to our hands-on session; we can work through one part at a time. The controller, row-buffer assembly, multi-lane bank, coordinate tags, reducer wiring, memory transport and board integration remain explicitly unimplemented. Passing this lab does not complete those blocks.
+Bring your first scratch bench or a waveform/failure to our hands-on session; we can work through one part at a time. Packed storage/frontend, the fixed multi-lane bank, coordinate tags and reducer wiring now exist in [[Stereo SAD Datapath]] with separate production benches. Autonomous control, memory transport and board integration do not. Passing this lab neither marks your unchecked sessions complete nor proves those system gates.
 
 ## Preparation evidence, not a claim that you completed the lesson
 

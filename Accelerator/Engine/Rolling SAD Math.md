@@ -13,6 +13,6 @@ Before accepting a new column, H holds the sum of the preceding K-1 columns.
 2. Update H = H - C_oldest + C_new; oldest is zero during warmup.
 3. Replace the oldest circular-buffer entry and advance the pointer.
 
-These are **column sums**, not row sums. [[Column SAD Engines]] still compute K absolute differences and reduce them per lane. [[Column Sum Buffer]] reuses horizontal overlap only. [[Image Line Buffers]] provide vertical pixels; their storage is separate.
+These are **column sums**, not row sums. [[Pipelined Column SAD Calculator]] computes K absolute differences and reduces them per lane. [[Column Sum Buffer]] reuses horizontal overlap only. [[Circular Row Buffer|Circular Row Buffer]] provides vertical pixels; its storage is separate.
 
-Clear on every change of vertical window/scanline: old row column sums cannot be reused for a new row without a separate vertical-update design.
+After draining in-flight engine work, clear horizontal cost history on a separate edge before accepting the next output scanline. Keep vertical row-buffer history; old row column sums cannot be reused for a new row without a separate vertical-update design. See [[Timing and Pipelining]] and [[Project Plan]].

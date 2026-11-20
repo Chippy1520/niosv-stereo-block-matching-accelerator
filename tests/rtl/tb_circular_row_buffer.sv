@@ -6,6 +6,7 @@ module tb_circular_row_buffer;
     parameter integer K = 11;
     parameter integer P = 8;
     parameter integer W = 8;
+    parameter integer FRAME_ROWS = (W >= 640) ? 480 : (2*K + 3);
     localparam integer MAX_PIX = (1 << 20) - 1;
     logic clk = 0;
     always #5 clk = ~clk;
@@ -25,6 +26,8 @@ module tb_circular_row_buffer;
     logic [31:0] rng = 32'h13579bdf;
     logic [K*P-1:0] held = '0;
     bit expected_valid, expected_last;
+    bit before_valid, before_last;
+    logic [K*P-1:0] before_column;
     integer i, ignored, x_ref, y_ref, j, index;
 
     function automatic logic [31:0] next_random();
@@ -37,6 +40,9 @@ module tb_circular_row_buffer;
     task automatic tick(input bit rn, cl, vi, input logic [P-1:0] pixel);
         begin
             @(negedge clk);
+            before_valid = expected_valid;
+            before_last = expected_last;
+            before_column = held;
             rst_n = rn; clear_i = cl; valid_i = vi; pixel_i = pixel;
             expected_valid = 0;
             expected_last = 0;
@@ -59,6 +65,12 @@ module tb_circular_row_buffer;
                 end
                 accepted = accepted + 1;
             end
+            // Changing the next input must not change a register-backed output.
+            #1;
+            if (cycles > 0 && (valid_o !== before_valid || row_last_o !== before_last
+                    || column_o !== before_column))
+                $fatal(1, "ROW K=%0d P=%0d W=%0d cycle=%0d output changed between edges",
+                    K, P, W, cycles);
             @(posedge clk); #1;
             if (valid_o !== expected_valid || row_last_o !== expected_last
                     || column_o !== held)
@@ -78,13 +90,14 @@ module tb_circular_row_buffer;
         end
         tick(0, 0, 0, '0);
         tick(0, 1, 1, {P{1'b1}});
-        // More than two windows, with bubbles, so the ring must drop old rows.
-        for (i = 0; i < (2*K + 3)*W; i = i + 1) begin
-            tick(1, 0, 1, P'(i + 1));
+        // Full 480-row frames at production widths; short multi-wrap cases otherwise.
+        // Random pixels avoid the row aliases caused by an 8-bit i counter at W=640.
+        for (i = 0; i < FRAME_ROWS*W; i = i + 1) begin
+            tick(1, 0, 1, P'(next_random()));
             if (i % 5 == 0) tick(1, 0, 0, {P{1'b1}});
         end
         tick(1, 1, 1, {P{1'b1}}); // clear discards this pixel and restarts warmup
-        for (i = 0; i < (K - 1)*W; i = i + 1) tick(1, 0, 1, P'(i + 3));
+        for (i = 0; i < (K - 1)*W; i = i + 1) tick(1, 0, 1, P'(next_random()));
         tick(1, 0, 0, '0);
         for (i = 0; i < W + 2; i = i + 1) tick(1, 0, 1, {P{1'b1}});
         tick(0, 0, 1, {P{1'b1}});
@@ -93,8 +106,8 @@ module tb_circular_row_buffer;
                  (next_random() % 4 != 0), P'(next_random()));
         tick(1, 0, 0, '0);
         if (outputs == 0) $fatal(1, "No valid row-buffer outputs checked");
-        $display("PASS row K=%0d P=%0d W=%0d cycles=%0d outputs=%0d",
-            K, P, W, cycles, outputs);
+        $display("PASS row K=%0d P=%0d W=%0d frame_rows=%0d cycles=%0d outputs=%0d",
+            K, P, W, FRAME_ROWS, cycles, outputs);
         $finish;
     end
     initial begin #100000000; $fatal(1, "row buffer test timeout"); end

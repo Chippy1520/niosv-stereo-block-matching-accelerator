@@ -4,7 +4,9 @@
 
 > **Read this as a course, not a test command list.** For every module: understand its job, draw its state, predict its clock trace, write a small independent bench, inspect waves, then compare with the production bench. The linked module notes contain the exact full RTL and code-adjacent explanations; this guide connects their implementation, mathematics, timing and verification into one datapath story.
 >
-> **Scope:** seven implemented functional modules, the tested single-engine connection and the local left/right pairing. The complete frontend, parallel engine bank, metadata/controller and accelerator top are still planned. The runnable lesson experiments below do not implement that missing wrapper or prove board operation.
+> **Scope:** the original component lessons remain reference experiments, not extra hardware in the packed path. [[Row Word Bank]] → [[Packed Circular Row Buffer]] → [[Stereo Frontend - Code Walkthrough]] supplies aligned tagged columns. [[SAD Search Backend]] adds the parallel engines, full-search mask, reducer and winner tags; [[Stereo SAD Datapath]] composes the complete compute path without a FIFO/controller. Implementation/explanations are complete for this compute increment; interactive simplification review comes before publishing, and the controller comes last. [Current spare-row evidence](../docs/verification/spare-row-prefetch.md); [historical K-only compute checkpoint](../docs/verification/compute-datapath.md).
+
+**Current packed-path reading route:** [[Row Word Bank]] → [[Packed Circular Row Buffer]] → [[Stereo Frontend - Code Walkthrough]] → [[SAD Search Backend]] → [[Stereo SAD Datapath]]. The serial image-row lesson in chapter 4 is a separate reference; do not add its RAM banks to the packed implementation. Module notes own the exact full RTL, while this guide owns the shared learning route.
 
 ## Contents and study order
 
@@ -35,7 +37,7 @@ S_d(x,y)=\sum_{h=0}^{K-1}\sum_{v=0}^{K-1}
 \left|L(y-v,x-h)-R(y-v,x-h-d)\right|.
 $$
 
-Smaller SAD means a closer photometric match, not a guarantee of correct depth. Equal costs are resolved by choosing the smaller disparity. This anchor explains the mathematical indexing; hardware coordinate tags and final output-map placement have not yet been implemented.
+Smaller SAD means a closer photometric match, not a guarantee of correct depth. Equal costs select the smaller disparity. Hardware now carries this bottom-right `(x,y)` anchor through the full search. Final memory-map placement/transport remains outside the compute path.
 
 Split the work into a vertical cost and a horizontal accumulation:
 
@@ -59,9 +61,9 @@ An image-row buffer stores **pixels**. The right shift cache stores **whole pixe
 ### 1.3 Intended flow, and current implementation boundary
 
 ```text
-L pixel → circular_row_buffer → left_column_delay ──broadcast──┐
+L packed words → packed_circular_row_buffer → left_column_delay ─┐
                                                              │
-R pixel → circular_row_buffer → right_column_shift → tap d ───┤
+R packed words → packed_circular_row_buffer → right_column_shift ┤
                                                              ▼
                    one sad_engine for each disparity d:
                    column_sad → column_sum_buffer → (SAD_d, valid_d)
@@ -73,19 +75,25 @@ R pixel → circular_row_buffer → right_column_shift → tap d ───┤
                           best (SAD, disparity)
 ```
 
-The boxes exist individually. `sad_engine` already connects its two child blocks. The pairing bench connects only the left delay and right cache. The arrows from row buffers through a lane bank to the comparator are the **intended integration**, not an existing complete accelerator. The control/metadata path is omitted from the drawing for readability, not because it is unnecessary.
+These compute connections now exist inside [[Stereo SAD Datapath]]. [[SAD Search Backend]] owns the engine bank/reducer and winner tags; the frontend owns packed stores/alignment and input tags. The control/metadata path is omitted from this drawing for readability. There is still no autonomous controller or complete CPU/board accelerator.
 
 ### 1.4 Module/source/solution map
 
 | Study chapter | Authoritative RTL | Exact-code note | Production bench |
 |---|---|---|---|
 | Image row ring | `rtl/circular_row_buffer.sv` | [[Circular Row Buffer]] | `tests/rtl/tb_circular_row_buffer.sv` |
+| Serial ring's internal RAM | `rtl/row_ram_bank.sv` | [[Row RAM Bank]] | `tests/rtl/tb_row_ram_bank.sv` |
 | Right disparity cache | `rtl/right_column_shift.sv` | [[Right Column Shift Register]] | `tests/rtl/tb_right_column_shift.sv` |
 | Left register | `rtl/left_column_delay.sv` | [[Left Column Delay]] | `tests/rtl/tb_left_column_delay.sv` |
 | Vertical arithmetic | `rtl/column_sad.sv` | [[Pipelined Column SAD Calculator]] | `tests/rtl/tb_column_sad.sv` |
 | Horizontal arithmetic/history | `rtl/column_sum_buffer.sv` | [[Column Sum Buffer - Code Walkthrough]] | `tests/rtl/tb_column_sum_buffer.sv` |
 | One complete lane | `rtl/sad_engine.sv` | [[Single SAD Engine]] | `tests/rtl/tb_sad_engine.sv` |
 | Winner selection | `rtl/comparator_tree.sv` | [[Minimum Comparator Tree - Code Walkthrough]] | `tests/rtl/tb_comparator_tree.sv` |
+| Packed row RAM | `rtl/row_word_bank.sv` | [[Row Word Bank]] | `tests/rtl/tb_row_word_bank.sv` |
+| Packed row ring | `rtl/packed_circular_row_buffer.sv` | [[Packed Circular Row Buffer]] | `tests/rtl/tb_packed_circular_row_buffer.sv` |
+| Packed stereo frontend | `rtl/stereo_frontend.sv` | [[Stereo Frontend - Code Walkthrough]] | `tests/rtl/tb_stereo_frontend.sv` |
+| Full fixed search + tags | `rtl/sad_search_backend.sv` | [[SAD Search Backend]] | `tests/rtl/tb_sad_search_backend.sv` |
+| Complete compute path | `rtl/stereo_sad_datapath.sv` | [[Stereo SAD Datapath]] | `tests/rtl/tb_stereo_sad_datapath.sv` |
 | Local pairing, not another functional module | — | [[Column Pairing Verification]] | `tests/rtl/tb_column_pairing.sv` |
 
 `rtl/circular_row_buffer_synth.sv` is a synthesis-smoke wrapper with a smaller fixed row width, not another datapath algorithm. It does not establish a full-size fitted row-memory implementation.
@@ -94,7 +102,7 @@ The boxes exist individually. `sad_engine` already connects its two child blocks
 
 ### 2.1 Parameters are hardware choices
 
-`K`, `PIXEL_W`, `IMG_W`, `TAPS`, `LANES`, `COL_W`, `SAD_W` and `D_W` are **elaboration-time parameters**. They determine how much hardware is generated. They are not CPU-controlled configuration registers. Runtime kernel/disparity configuration requires a separate design that is not present here.
+`K`, `PIXEL_W`, `IMG_W`, `SPARE_ROWS`, `TAPS`, `LANES`, `COL_W`, `SAD_W` and `D_W` are **elaboration-time parameters**. They determine how much hardware is generated. They are not CPU-controlled configuration registers. Packed bank widths cover K+SPARE_ROWS physical rows, while the output column stays K pixels wide. Runtime kernel/disparity configuration requires a separate design that is not present here.
 
 Use `P=PIXEL_W`, `B=K*P` for the packed pixel-column width, and `CW` for the column-cost width in your notes:
 
@@ -210,22 +218,22 @@ It converts one accepted raster pixel stream into K-pixel vertical columns. Inst
 | `valid_o`, `column_o[B-1:0]` | A complete registered vertical column after sufficient rows exist |
 | `row_last_o` | True only with a complete column at x=IMG_W−1; not a warmup-row end signal |
 
-State: `row_mem[K][IMG_W]`, horizontal cursor `x`, write `slot`, and saturated `rows_filled`. The logical payload store is K×IMG_W×P bits: 56320 bits per image at defaults. This is declared storage, **not** a fitted resource count.
+State: K generated [[Row RAM Bank]] instances, each with `memory[IMG_W]`, horizontal cursor `x`, write `slot`, saturated `rows_filled`, clocked bank reads, captured `read_slot`/`newest_pixel`, and a `column_present` mask. Logical pixel storage is K×IMG_W×P bits: 56320 per image at defaults; the production Analysis & Synthesis now reports that memory, not a fitted count. K=1 omits image RAM.
 
 ### How the ring actually works
 
-1. Accepted input writes `row_mem[slot][x]`.
-2. Older rows are read from `(slot+j+1)` wrapped into the K slots. The sum is wide enough to avoid truncation before comparison.
+1. Accepted input writes address x in the generated bank selected by `slot`. The banks have no bulk reset.
+2. Bank reads capture x on the same edge. Older rows select `(read_slot+j+1)` wrapped into K slots. The widened sum prevents truncation before comparison.
 3. Since the largest sum needs at most one wrap, the RTL uses compare/subtract rather than a general `% K` divider.
-4. The newest row is **pixel_i itself**, bypassing the memory write. This avoids needing the just-written memory value to appear immediately.
+4. The newest row is **pixel_i captured into `newest_pixel` on that same edge**, bypassing the memory write. The currently written bank is not selected as an older row, so its read/write collision value is irrelevant.
 5. At the final x, the cursor wraps, slot advances modulo K and the completed-row count increases. A bubble changes none of these.
-6. Output becomes valid when `rows_filled >= K−1`. It reads the previous K−1 rows at that x plus the arriving pixel.
+6. Output becomes valid when `rows_filled >= K−1`. Clocked older pixels, the captured slot tag and newest register align after that edge, without an extra output-register stage. A downstream clocked block consumes the column on the following edge.
 
 For K=3: write rows into slots 0,1,2; the third row's slot 2 reads older slots 0 and 1. On the fourth row, slot 0 reads older slots 1 and 2. The physical slot order changes; the output's oldest-to-newest row order does not.
 
 Reset/clear does not bulk-erase the memories. It resets cursors/readiness and zeros registered outputs. Old memory must remain unreachable until the new stream rewrites enough complete rows. This is why warmup tests must also follow a clear after nonzero image data.
 
-**Implementation limit:** these sources use combinational row-memory reads and registered output. Mapping to synchronous FPGA block RAM is a later fitting/timing pass, not merely a naming change. A RAM read register would alter the interface latency unless explicitly accommodated.
+**Implementation check:** the current row-store candidate uses synchronous bank reads rather than asynchronous pixel reads. Capturing bank results, selection tag and newest bypass together preserves the external edge contract. A RAM attribute alone does not prove inference: see [[Circular Row Buffer]] for exact RTL and the [row synthesis evidence](../docs/verification/row-buffer-synthesis.md) for mapping status. The accelerator controller is deferred until after datapath review.
 
 ### Predict, then test
 
@@ -502,23 +510,23 @@ Now change lane zero's cost to zero but use mask `110`: that invalid zero must n
 
 ### 11.1 Alignment and enables
 
-For future lane d, the intended sampled input is common L[x] and right tap R[x−d], enabled by `left_valid && tap_valid[d]`. Both streams must share the same accepted-coordinate progression. A single common valid is a contract, not a synchronizer for independently arriving images; independent transport streams need appropriate buffering/pairing first.
+For implemented lane d, the sampled input is common L[x] and right tap R[x−d], enabled by `left_valid && tap_valid[d]`. Both streams must share the same accepted-coordinate progression. A common valid is a contract, not a synchronizer for independently arriving images; independent transport streams need appropriate buffering/pairing first. Prefix warmup is legal, but a missing lane column after warmup is not: accepted x must be contiguous, even if wall-clock bubbles intervene.
 
 Every lane's history accumulates its own valid aligned columns. Tap warmup is not a complete K-column window: tap d first appears at x=d, but its first full horizontal lane window requires x≥d+K−1. Vertical windows additionally require y≥K−1.
 
-Under the bottom-right convention, all disparities 0…TAPS−1 are geometrically available only for x≥(TAPS−1)+(K−1). At defaults that threshold is x=41. This is a mathematical border rule, **not an implemented output mask or coordinate counter**.
+Under the bottom-right convention, all disparities 0…LANES−1 are available only for x≥(LANES−1)+(K−1) and y≥K−1, within image bounds. Defaults start at x=41. The backend now implements this common-interior output mask, not a coordinate counter. Engine inputs are deliberately not common-interior masked: early lane-specific columns build their horizontal histories.
 
-A future system must decide whether border pixels use a subset of disparities, are marked invalid, or are omitted. It must also decide output anchoring/placement. Do not silently turn missing candidates into valid zero SAD.
+The current fixed search emits no border results and never falls back to a subset winner. All lanes must be valid together for a qualified coordinate. Ties select lower d. Placement in external output memory remains a transport decision.
 
 ### 11.2 Spatial history is not an output delay
 
 All equal-K/P engines have the same clock pipeline offset. A lane with larger d starts its accepted-column warmup later, but once valid it still describes the current left x. Do not add another d-cycle delay to engine outputs: that would combine costs for different left coordinates in the comparator.
 
-Metadata `(x,y)` must follow the actual registered timing and valid/bubble flow. Gating the metadata pipeline only when **new input** is valid would stall old tags while old numeric work continues. The correct controller/tag design must be specified and tested before the wrapper.
+Metadata `(x,y)` must follow the actual registered timing and valid/bubble flow. Gating the metadata pipeline only when **new input** is valid would stall old tags while old numeric work continues. The implemented frontend/backend already register and test these tags; autonomous scheduling remains a separate controller obligation.
 
-### 11.3 Proposed continuous-case edge budget, not a measured integrated result
+### 11.3 Implemented continuous-case edge budget
 
-If eligible pixel inputs are sampled by row buffers at edge 0, and all intended connections use the same clock without extra registers:
+If an eligible packed-store read request is sampled at edge 0, K=11/LANES=32 uses this edge budget:
 
 | Event | Predicted edge at default K=11 / 32 comparator lanes |
 |---|---|
@@ -529,18 +537,18 @@ If eligible pixel inputs are sampled by row buffers at edge 0, and all intended 
 | Comparator samples engine candidate outputs | 8 |
 | Comparator root registers winner | 12 |
 
-This is derived from the component sampling contracts, assuming warmup is already satisfied. There is no complete top-level RTL/metadata bench proving this end-to-end budget yet. Added RAM stages, FIFOs, transport or controller choices can change it.
+This is implemented without another packing register and checked by the full-path due-edge queue. Backend input at t produces a winner after `t+E+R`, where `E=ceil(log2(K))+1` and `R=max(1,ceil(log2(LANES)))`. The frontend adds two edges. Tags shift every clock, including bubbles. At defaults the last read r produces its last result after r+12; clear must wait until r+13 or later, when a synchronous consumer can also capture that last result. Abort clear intentionally discards pending work.
 
-### 11.4 What is missing and must be tested later
+### 11.4 Implemented versus missing
 
-- Row-buffer-to-pair-to-engine hookup with a raw stereo-image reference.
-- Parallel bank fan-out/fan-in and aligned valid masks/IDs/tags.
-- Row-last tag delay, ingress pause control, lane drains, reducer drain and correctly scoped clears.
+- Implemented: packed row buffers through pairing, all engines and the reducer, with a full raw-image-window reference.
+- Implemented: parallel fan-out/fan-in, full-search validity, matching IDs/coordinates/row-last and scoped clears.
+- Externally stimulated, not autonomous: ingress pauses, bank ownership/readiness and complete-path drain before row clear.
 - Output buffering and a policy for downstream stalls. None of these modules has a ready/backpressure interface.
 - Runtime control/status and memory-mapped interfaces, address generation, memory transport and board integration.
-- Resource fitting, RAM mapping, fully constrained timing and actual board acceptance.
+- Resource fitting, fully constrained timing and actual board acceptance remain missing. RAM mapping already has Analysis & Synthesis evidence; it is not fitted placement or timing.
 
-[[Disparity Bank]], [[Timing and Pipelining]], [[Interface Contract]] and [[Hardware Integration]] are planning references, not substitutes for those verification gates.
+Future controller, transport and board work remains in [[Project Plan]]. [[SAD Search Backend]] and [[Stereo SAD Datapath]] provide the exact-source explanations of the new compute connections; none replaces the remaining system gates.
 
 ## 12. Run the worked examples and write your own benches
 
@@ -631,25 +639,26 @@ Changing a scratch bench requires recompilation. Restarting a simulation image w
 
 ### 13.2 What passing simulations do and do not establish
 
-The production regression contains 70 simulation cases, with separate deliberate-fault checks. The teaching trace is a separate fixed-size experiment, **not 40 extra parameter cases** and not a complete disparity-map test. Source snapshots are checked against RTL by `scripts/check_walkthrough.py`.
+Current counts and final-source results are recorded in [[Verification]] and [compute-path evidence](../docs/verification/compute-datapath.md); the original 80-case study-guide milestone remains historical. The teaching trace is a separate experiment, **not 40 extra parameter cases**. `scripts/check_walkthrough.py` checks every functional module's exact source snapshot and registered standalone bench. Full-width packed compute cases are bounded-row tests, not a 640×480 full-path claim.
 
 [This guide's actual simulation evidence](../docs/verification/datapath-study-guide.md) records the Icarus/Questa worked traces, production regression and individual-command checks. Preparing and running these examples does not mean you have already completed the bench-writing exercises yourself.
 
-Use the recorded [[Verification]] and `docs/verification/` reports for actual component synthesis results. Simulation demonstrates functional contracts for tested conditions. Analysis & Synthesis is not fitting or timing closure. Resource estimates for a small smoke top cannot be claimed for the full 640-wide row buffer. This study-guide milestone changes no synthesizable datapath RTL and requires no claim of new hardware synthesis.
+Use [[Verification]] and `docs/verification/` for actual synthesis results. Simulation demonstrates tested functional contracts; Analysis & Synthesis is not fitting or timing closure. The current full-width row-store report establishes mapping separately from the original study-guide milestone; the old width-16 smoke result is only a historical baseline.
 
 **Recorded area evidence, not new synthesis from this guide:**
 
 | Component / actual synthesized configuration | Recorded Analysis & Synthesis | Limits / evidence |
 |---|---|---|
-| Row-ring smoke top, K=11/P=8/IMG_W=16 | 3156 logic elements; 0 errors/warnings; 0 inferred memory bits | [Row report](../docs/verification/row-buffer-synthesis.md). Full IMG_W=640 did not finish the documented time-limited attempts; no full-width area/timing result. |
+| Historical pre-repair row-ring smoke top, K=11/P=8/IMG_W=16 | 3156 logic elements; 0 errors/warnings; 0 inferred memory bits | [Row report](../docs/verification/row-buffer-synthesis.md) distinguishes this baseline from the current RAM-inference gate. Do not use smoke-top area as full-width area. |
+| Current row store, K=11/P=8/IMG_W=640 | 697 logic elements, 33 registers, 56,320 logical memory bits; 11 M9K RAM nodes | [Row report](../docs/verification/row-buffer-synthesis.md). Analysis & Synthesis, not fitting, timing or full stereo integration. |
 | Single engine, K=11/P=8 | 770 logic elements, 368 registers; 0 errors/warnings; 0 inferred memory bits | [Engine report](../docs/verification/single-engine-synthesis.md). Includes calculator + cost history; not a fitted lane bank. |
 | Right cache, K=11/P=8/TAPS=32 | 2883 logic cells; 0 errors/warnings | [Shift report](../docs/verification/right-shift-synthesis.md). Wide tap bus is internal wiring, not assignable board pins. |
 | Left register, K=11/P=8 | 90 logic cells; 0 errors/warnings | [Delay report](../docs/verification/left-delay-synthesis.md). Component only. |
 | Comparator, LANES=32/SAD_W=15/D_W=5 | 1622 logic cells; 0 errors; 1 processor-count-setting warning | [Comparator report](../docs/verification/comparator-synthesis.md). Not integrated bank timing. |
 
-The guide does not provide a separately measured calculator/history area split or an integrated accelerator total. Multiplying one lane's area by 32 is an estimate, not a measured bank result. None of these reports establishes fitted Fmax or power. A provisional clock constraint is a target, not achieved timing.
+The guide does not provide a separate calculator/history area split or a CPU/board accelerator total. The complete compute top now has directly measured 1-, 3- and 32-lane A&S builds in [compute-path evidence](../docs/verification/compute-datapath.md); multiplying one lane's area by 32 is unnecessary and would be misleading. These smaller lane builds search smaller ranges: no replay/throughput comparison is established. None establishes fitted Fmax or power.
 
-**Design trade-offs to discuss after the functional labs:** registered reduction trees exchange register count/latency for shorter combinational paths; explicit valid state keeps bubbles from corrupting history; rings exchange large shifting stores for indexed writes/reads and control; register-based right taps provide simultaneous column access but cost wide storage/wiring. The actual asynchronous row/history reads did not infer block RAM in the cited runs. Changing to synchronous RAM may improve mapping but changes timing and must be treated as a new verified implementation step, not a guaranteed optimization.
+**Design trade-offs to discuss after the functional labs:** registered reduction trees exchange register count/latency for shorter combinational paths; explicit valid state keeps bubbles from corrupting history; rings exchange large shifting stores for indexed writes/reads and control; register-based right taps provide simultaneous column access but cost wide storage/wiring. Historical asynchronous row/history reads did not infer RAM in the cited runs. The new synchronous row-store implementation must separately prove mapping and preserved timing; neither a RAM attribute nor behavioral simulation alone establishes that.
 
 ### 13.3 Before moving to the new wrapper
 

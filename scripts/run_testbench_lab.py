@@ -60,7 +60,7 @@ def main():
                 raise SystemExit(f'Fault not caught by teaching scoreboard: {label}\n{output}')
             print(f'PASS teaching sensitivity: {label} compiled and was rejected')
     if args.examples:
-        names = ['circular_row_buffer', 'left_column_delay', 'right_column_shift',
+        names = ['row_ram_bank', 'circular_row_buffer', 'left_column_delay', 'right_column_shift',
                  'column_sad', 'column_sum_buffer', 'sad_engine', 'comparator_tree']
         sources = [ROOT / 'rtl' / f'{name}.sv' for name in names]
         snapshots = {path: path.read_bytes() for path in sources}

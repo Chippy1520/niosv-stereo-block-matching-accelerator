@@ -1,32 +1,49 @@
 # Circular Row Buffer
 #implemented
 
-[[Home]] · [[Module Blocks.canvas|System blocks]] · [[Accelerator Blocks.canvas|Accelerator blocks]] · [[Stereo Frontend Blocks.canvas|Frontend drill-down]] · [[Image Line Buffers]] · [[Single SAD Engine]] · [[Testbench Guide]]
+[[Home]] · [[Module Blocks.canvas|System blocks]] · [[Accelerator Blocks.canvas|Accelerator blocks]] · [[Stereo Frontend Blocks.canvas|Frontend drill-down]] · [[Stereo Frontend]] · [[Single SAD Engine]] · [[Testbench Guide]]
 
-Source: [rtl/circular_row_buffer.sv](../../rtl/circular_row_buffer.sv). Bench: [tb_circular_row_buffer.sv](../../tests/rtl/tb_circular_row_buffer.sv).
+Source: [rtl/circular_row_buffer.sv](../../rtl/circular_row_buffer.sv). Bench: [tb_circular_row_buffer.sv](../../tests/rtl/tb_circular_row_buffer.sv). Internal memory primitive: [[Row RAM Bank]].
 
 ## First, the story — no RTL yet
 
-Imagine a filing cabinet with eleven full-row drawers and a clerk walking across an image one pixel at a time. The clerk drops each new pixel into the drawer assigned to the current image row. At a given horizontal position, the cabinet still holds pixels from earlier rows at that same position. Once enough rows have arrived, the clerk reads the ten older pixels and adds the just-arrived pixel as the newest: that bundle is one **vertical column**. At the end of the image row, the clerk returns to the left edge and rotates to the next drawer. Eventually the drawers circle back and old rows are overwritten. An input pause leaves the clerk standing in place; an abort returns the clerk to the start and requires enough fresh rows before any bundle can be trusted again.
+Imagine a filing cabinet with eleven full-row drawers and a clerk walking across an image one pixel at a time. Each new pixel goes into the drawer assigned to the current image row. At that horizontal position, other drawers hold pixels from earlier rows. Once enough rows have arrived, the clerk reads the ten older pixels and adds the just-arrived pixel as the newest: that bundle is one **vertical column**. At row end, the clerk returns to the left edge and rotates to the next drawer. Old rows are eventually overwritten. A pause leaves the clerk standing in place; an abort returns the clerk to the start and requires fresh rows before another bundle can be trusted.
 
-This cabinet works for **one grayscale image only**. It neither pairs two images nor calculates differences or the SAD score. An end-of-output-row sign tells a future controller when to drain the downstream engine; the cabinet itself does not wait.
+This cabinet serves **one grayscale image only**. It neither pairs images nor calculates SAD. Its end-of-output-row sign tells a future controller when to drain the downstream engine; the cabinet itself does not wait.
 
 ```text
-One image's pixel stream -> x position, rotating row slot
-                        -> old pixels from other slots at the same x
-New pixel ---------------------------------------------> newest tap
-Old taps + newest tap -> registered vertical column (after warmup)
+Pixel stream -> horizontal cursor x + rotating write slot
+            -> K clocked row RAM banks -> registered older pixels
+New pixel -----------------------------> registered newest pixel
+Captured write-slot tag + registered pixels -> ordered vertical column
 ```
 
-**Map for reading code:** drawer → `row_mem`; clerk position → `x`/`slot`; fresh-row count → `rows_filled`; newest bypass → `pixel_i`; resulting bundle → `column_o`; end-of-row sign → `row_last_o`. Below, every important statement is traced back to this picture.
+**Map for reading code:** drawer → [[Row RAM Bank]]'s `memory`; clerk position → `x`/`slot`; fresh-row count → `rows_filled`; bank results → `bank_columns`; newest bypass → `newest_pixel`; captured drawer identity → `read_slot`; bundle → `column_o`; end-of-row sign → `row_last_o`.
 
 ## What this abstraction is
 
-One grayscale stream. Pixels arrive left to right, then the next row. The module keeps **K row slots in a ring** and, once those rows overlap, emits the vertical column at the current x.
+One raster-ordered grayscale stream. The module keeps **K row slots in a ring** and emits a vertical K-pixel column at each accepted x once enough fresh rows overlap.
 
-It does **not** pair left and right images, shift a disparity, pad borders, or compute SAD. Use two instances later. A future controller must drain [[Single SAD Engine]] after `row_last_o` before the next window-row; this module does not insert that gap.
+It does **not** pair images, shift disparity, pad borders, compute SAD or stall the producer. Use two instances later. A future controller must drain [[Single SAD Engine]] after `row_last_o` before the next window-row. **That controller comes last, after datapath review.**
+
+## Review contract — this block only
+
+This replaces the asynchronous pixel-read network with independent synchronous RAM banks. The small bank-module boundary is an internal implementation dependency, **not another accelerator stage**. The existing ports and accepted-pixel/output edge are preserved.
+
+| Item | Contract |
+|---|---|
+| Dimensions | Compile-time `K`, `PIXEL_W`, `IMG_W`; defaults 11, 8, 640. |
+| Input | One P-bit pixel; accepted only with `rst_n && !clear_i && valid_i`. No ready port. |
+| Output | K×P bits, oldest row in the low slice. `valid_o` and `row_last_o` describe that column. |
+| Read latency | At edge E, bank read registers, newest-pixel register and row-selection tag update together. Their column is available after E; a downstream register samples it at E+1. No additional pipeline edge. |
+| Read/write collision | All banks read x on an accepted pixel. The written bank's collision result is **never selected**: newest is a registered bypass. No old/new collision value is assumed. |
+| Bubbles | Cursor, bank reads and payload hold. Valid/last go low after the bubble edge. |
+| Reset/clear | Synchronous; discard simultaneous valid input. Reset cursor/tags/visibility, **not RAM**. Fresh-row warmup masks stale contents. |
+| Out of scope | Second image, disparity alignment, SAD, automatic drain, controller, memory transport, fitted timing and board proof. |
 
 ## Complete source
+
+The first SystemVerilog block exactly matches the RTL; `scripts/check_walkthrough.py` checks it. Read [[Row RAM Bank]] for the bank's full source and independent testbench.
 
 ```systemverilog
 `timescale 1ns/1ps
@@ -36,7 +53,7 @@ It does **not** pair left and right images, shift a disparity, pad borders, or c
 // per accepted pixel once K rows overlap at that x.
 // Window row 0 is the oldest and occupies [0 +: PIXEL_W]; row K-1 is pixel_i.
 // Accepted at edge t -> registered column after that edge. No backpressure.
-// clear_i drops the cursor and the output. Slots are never read until rewritten.
+// clear_i drops the cursor and output, not RAM. Warmup masks stale storage.
 // This is not disparity alignment, pairing, or the SAD engine. Instantiate twice.
 // row_last_o marks the last x of a complete window-row. A later controller must
 // drain the engine before the next row; this module does not insert that gap.
@@ -58,28 +75,48 @@ module circular_row_buffer #(
     localparam integer SLOT_W = (K <= 1) ? 1 : $clog2(K);
     localparam integer COUNT_W = $clog2(K + 1);
 
-    // Functional row store. Combinational column readout is the abstraction;
-    // mapping each row to synchronous RAM is a later fitting pass.
-    logic [PIXEL_W-1:0] row_mem [0:K-1][0:IMG_W-1];
     logic [X_W-1:0] x;
     logic [SLOT_W-1:0] slot;
     logic [COUNT_W-1:0] rows_filled;
     wire window_ready = (rows_filled >= COUNT_W'(K - 1));
+    wire accept_pixel = rst_n && !clear_i && valid_i;
+    wire capture_column = accept_pixel && window_ready;
 
-    wire [K*PIXEL_W-1:0] column_next;
-    genvar j;
+    // These tags/bypass update with the RAM read registers, not a cycle later.
+    logic [SLOT_W-1:0] read_slot;
+    logic [PIXEL_W-1:0] newest_pixel;
+    logic column_present;
+    wire [K*PIXEL_W-1:0] bank_columns;
+
+    genvar b, j;
     generate
+        if (K > 1) begin : g_rows
+            for (b = 0; b < K; b = b + 1) begin : g_bank
+                // Keep the recognized RAM template inside its own module boundary.
+                row_ram_bank #(.PIXEL_W(PIXEL_W), .DEPTH(IMG_W)) bank (
+                    .clk(clk), .enable_i(accept_pixel),
+                    .write_i(slot == SLOT_W'(b)), .address_i(x),
+                    .pixel_i(pixel_i),
+                    .pixel_o(bank_columns[b*PIXEL_W +: PIXEL_W])
+                );
+            end
+        end else begin : g_no_rows
+            // K=1 needs only the registered newest pixel, not image RAM.
+            assign bank_columns = '0;
+        end
+
         for (j = 0; j < K; j = j + 1) begin : g_tap
             if (j == K - 1) begin : g_newest
-                assign column_next[j*PIXEL_W +: PIXEL_W] = pixel_i;
+                assign column_o[j*PIXEL_W +: PIXEL_W] =
+                    column_present ? newest_pixel : '0;
             end else begin : g_older
-                // slot is 0..K-1 and this offset is 1..K-1, so one subtract wraps it.
-                // A wide % would make Quartus infer a divider.
-                wire [SLOT_W:0] tap_sum = {1'b0, slot} + (SLOT_W + 1)'(j + 1);
+                // Rotate registered bank reads using the slot from their edge.
+                // The live slot may already have advanced at row end.
+                wire [SLOT_W:0] tap_sum = {1'b0, read_slot} + (SLOT_W + 1)'(j + 1);
                 wire [SLOT_W:0] tap_slot = (tap_sum >= (SLOT_W + 1)'(K))
                     ? tap_sum - (SLOT_W + 1)'(K) : tap_sum;
-                assign column_next[j*PIXEL_W +: PIXEL_W] =
-                    row_mem[tap_slot[SLOT_W-1:0]][x];
+                assign column_o[j*PIXEL_W +: PIXEL_W] = column_present
+                    ? bank_columns[tap_slot[SLOT_W-1:0]*PIXEL_W +: PIXEL_W] : '0;
             end
         end
     endgenerate
@@ -91,17 +128,18 @@ module circular_row_buffer #(
             rows_filled <= '0;
             valid_o <= 1'b0;
             row_last_o <= 1'b0;
-            column_o <= '0;
+            read_slot <= '0;
+            newest_pixel <= '0;
+            column_present <= 1'b0;
         end else begin
-            valid_o <= 1'b0;
-            row_last_o <= 1'b0;
-            if (valid_i) begin
-                row_mem[slot][x] <= pixel_i;
-                if (window_ready) begin
-                    valid_o <= 1'b1;
-                    row_last_o <= (x == IMG_W - 1);
-                    column_o <= column_next;
-                end
+            valid_o <= capture_column;
+            row_last_o <= capture_column && (x == IMG_W - 1);
+            if (capture_column) begin
+                read_slot <= slot;
+                newest_pixel <= pixel_i;
+                column_present <= 1'b1;
+            end
+            if (accept_pixel) begin
                 if (x == IMG_W - 1) begin
                     x <= '0;
                     if (K == 1) slot <= '0;
@@ -125,191 +163,101 @@ endmodule
 `default_nettype wire
 ```
 
-## Code walkthrough — the row ring, with RTL beside each explanation
+## Code walkthrough — read one section, then ask questions
 
-Line numbers below refer to [rtl/circular_row_buffer.sv](../../rtl/circular_row_buffer.sv). This **one-image** pixel-row ring is distinct from the engine's circular *column-cost* history.
+Line numbers refer to the RTL file, not this note. This stores **image rows**, not the engine's column-cost history.
 
-### 1. Interface: what the clerk receives and emits (lines 1–25)
+### 1. Interface and cursor — lines 1–35
 
-```systemverilog
-`timescale 1ns/1ps
-`default_nettype none
-module circular_row_buffer #(
-    parameter integer K = 11,
-    parameter integer PIXEL_W = 8,
-    parameter integer IMG_W = 640
-) (
-    input  wire                       clk,
-    input  wire                       rst_n,
-    input  wire                       clear_i,
-    input  wire                       valid_i,
-    input  wire [PIXEL_W-1:0]         pixel_i,
-    output logic                      valid_o,
-    output logic                      row_last_o,
-    output logic [K*PIXEL_W-1:0]      column_o
-);
-```
+| RTL line / statement | Why it exists |
+|---|---|
+| 1–11: timescale, nettype, comments | Simulation units, typo protection, raster order and the absence of automatic row drain. |
+| 12–16: `K`, `PIXEL_W`, `IMG_W` | Elaboration-time dimensions, not CPU registers. |
+| 17–21: clock/reset/clear/valid/pixel inputs | One stream. Reset and clear take priority over valid. |
+| 22–25: `valid_o`, `row_last_o`, `column_o` | K packed pixels and their matching flags. Warmup row ends do not produce row_last. |
+| 26–28: `X_W`, `SLOT_W`, `COUNT_W` | Counter widths. Clamp depth-one x/slot to one bit; allow a completed-row count through K. |
+| 30: `x` | Horizontal position of the next accepted pixel. |
+| 31: `slot` | Physical bank overwritten by the current image row. |
+| 32: `rows_filled` | Completed fresh rows since clear, saturating at K. |
+| 33: `window_ready` | K−1 complete older rows plus the current pixel make a vertical window. |
+| 34: `accept_pixel` | Common cursor/write/read enable; reset and clear cannot write a pixel. |
+| 35: `capture_column` | Mature accepted pixel: output tag and bypass may become visible. Earlier reads stay masked. |
 
-- **Lines 1–2:** Simulation timing and implicit-net typo protection; neither is a row store.
-- **Lines 4–11 (comments in full source):** Define raster order, oldest-to-newest packing, one-edge registration, and the fact that *some future controller* must drain a downstream engine after a complete output row. They do not implement a drain.
-- **Lines 12–16:** `K` is the number of image rows represented in one vertical column; `PIXEL_W` is bits per pixel; `IMG_W` is accepted pixels per row. These are fixed at elaboration, not CPU-controlled at runtime.
-- **Lines 17–21:** Clock, synchronous reset/clear, acceptance stamp, and a single grayscale input pixel. With `valid_i=0` the clerk must not move.
-- **Lines 22–25:** Output-valid, last-x-of-complete-window-row marker, and packed vertical column. Row zero occupies the low slice; current `pixel_i` occupies row K−1. The flag marks an output column, not every incoming warmup-row boundary.
+### 2. Clocked banks — lines 37–58
 
-### 2. State and warmup (lines 26–36)
+| RTL line / statement | Why it exists |
+|---|---|
+| 37–41: `read_slot`, `newest_pixel`, `column_present`, `bank_columns` | Hold the selector tag, newest bypass and visibility bit alongside the bank results. The packed bus is wiring, not another image store. |
+| 43–46: separately declared `genvar b, j`, bank loop | Elaborate K simultaneous bank instances; not K sequential clocks. This syntax also satisfies local Quartus parsing. |
+| 47–48: `row_ram_bank #(…) bank` | Keep the measured working RAM inference template inside its own module boundary. Generated local-array candidates did not infer RAM in the tested local configuration. See [[Row RAM Bank]]. |
+| 49: `.enable_i(accept_pixel)` | Advance all bank read outputs only on accepted pixels; hold through bubbles and reset/clear. |
+| 50: `.write_i(slot == SLOT_W'(b)), .address_i(x)` | Only the bank matching slot writes; every bank addresses the same horizontal x. Cast b to the slot comparison width. |
+| 51–53: pixel input and fixed bank slice | Route incoming pixel and each clocked bank result. The write bank's read result is unspecified, but the parent never selects it. |
+| 54–58: K=1 branch | No older rows exist; omit all RAM and use the newest-pixel register only. |
 
-```systemverilog
-localparam integer X_W = (IMG_W <= 1) ? 1 : $clog2(IMG_W);
-localparam integer SLOT_W = (K <= 1) ? 1 : $clog2(K);
-localparam integer COUNT_W = $clog2(K + 1);
-logic [PIXEL_W-1:0] row_mem [0:K-1][0:IMG_W-1];
-logic [X_W-1:0] x;
-logic [SLOT_W-1:0] slot;
-logic [COUNT_W-1:0] rows_filled;
-wire window_ready = (rows_filled >= COUNT_W'(K - 1));
-```
+**Why no RAM reset?** Resetting every word can prevent embedded-memory mapping. Instead, reset visibility and require enough fresh rows before exposing another column.
 
-- **Line 26:** Counter width for the pixel position; the one-pixel-row case still has a legal one-bit counter.
-- **Line 27:** Counter width for the rotating row slot; K=1 still has a legal bit of storage.
-- **Line 28:** Enough bits to count through K completed rows before saturation.
-- **Lines 30–32:** Defines K rows of IMG_W pixel positions. The comment explicitly calls this a **functional** combinational-read model; it does not promise M9K inference at full image width.
-- **Lines 33–34:** `x` is the position within one raster row; `slot` is the current drawer to overwrite when accepting pixels.
-- **Lines 35–36:** `rows_filled` counts *completed rows*; after K−1 rows, the incoming pixel at the current x can finish the first K-row vertical window. Old memory bits are not trusted before this condition.
+### 3. Physical banks to ordered rows — lines 60–74
 
-### 3. The parallel tap wiring (lines 38–54)
+| RTL line / statement | Why it exists |
+|---|---|
+| 60–63: `g_tap`, `g_newest`, `newest_pixel` | One slice per window row. The newest slice uses a registered pixel, never live `pixel_i`. |
+| 64–67: `g_older`, `tap_sum` using `read_slot` | Select with the slot captured on the read edge. The live slot may already have rotated at the final x. Extra carry width prevents overflow. |
+| 68–69: conditional subtraction | Wrap a bounded slot+j+1 sum by subtracting K once; no general modulo divider. |
+| 70–71: `column_present ? bank_columns[…] : '0` | Select among K clocked P-bit results, not IMG_W asynchronous words. Force zeros while storage is untrusted. Oldest row occupies the low slice. |
+| 72–74: block endings | This output is a combinational mux of registered values; there is no extra output pipeline register. |
 
-```systemverilog
-wire [K*PIXEL_W-1:0] column_next;
-genvar j;
-generate
-    for (j = 0; j < K; j = j + 1) begin : g_tap
-        if (j == K - 1) begin : g_newest
-            assign column_next[j*PIXEL_W +: PIXEL_W] = pixel_i;
-        end else begin : g_older
-            wire [SLOT_W:0] tap_sum = {1'b0, slot} + (SLOT_W + 1)'(j + 1);
-            wire [SLOT_W:0] tap_slot = (tap_sum >= (SLOT_W + 1)'(K))
-                ? tap_sum - (SLOT_W + 1)'(K) : tap_sum;
-            assign column_next[j*PIXEL_W +: PIXEL_W] =
-                row_mem[tap_slot[SLOT_W-1:0]][x];
-        end
-    end
-endgenerate
-```
+At fixed x with K=3:
 
-- **Lines 38–41:** Define one packed candidate column and *K simultaneous taps*. The generate loop constructs hardware connections; it does not take K clock cycles.
-- **Lines 42–43:** The newest tap directly uses the incoming `pixel_i`, because `row_mem[slot][x]` still contains the row K steps old until this edge's write is registered. With K=1, this is the **only** tap.
-- **Lines 44–47:** For an older output row `j`, calculate `slot+j+1` with one extra bit so arithmetic cannot truncate. The oldest output row (`j=0`) lives in the drawer *after* the one being overwritten.
-- **Lines 48–49:** If that index reaches K, subtract K **once**. The possible sum is below 2K, so one subtract suffices; a wide `% K` would infer an expensive divider.
-- **Lines 50–51:** Read that selected row at the *same x* as every other tap. This assembles a vertical column rather than neighboring pixels in one row.
-- **Lines 52–54:** End conditional and generated hardware. The ordered packed slices place oldest row at index zero and newest at index K−1.
+| Incoming image row | Captured write slot | Oldest | Middle | Newest |
+|---|---:|---|---|---|
+| 0, 1 | 0, 1 | Invalid warmup | Invalid warmup | Invalid warmup |
+| 2 | 2 | bank 0 output | bank 1 output | registered current pixel |
+| 3 | 0 | bank 1 output | bank 2 output | registered current pixel |
+| 4 | 1 | bank 2 output | bank 0 output | registered current pixel |
 
-**K=3 drawer map at a fixed x (the arrows are tap selection, not clock cycles):**
+### 4. Reset, visibility and row advance — lines 76–106
 
-```text
-incoming image row      write slot     row 0 output      row 1 output      row 2 output
-row 0                   0              —                 —                 —
-row 1                   1              —                 —                 —
-row 2                   2              row_mem[0][x]     row_mem[1][x]     pixel_i
-row 3                   0              row_mem[1][x]     row_mem[2][x]     pixel_i
-row 4                   1              row_mem[2][x]     row_mem[0][x]     pixel_i
-```
+| RTL line / statement | Why it exists |
+|---|---|
+| 76–85: clocked reset/clear branch | Reset cursor, warmup count, flags, tag and bypass; clear `column_present`. Neither RAM contents nor bank read registers are reset. |
+| 86–88: `valid_o <= capture_column`, `row_last_o <= …` | Qualify this edge's output. A bubble clears both flags after the edge. |
+| 89–93: capture `read_slot`, `newest_pixel`, `column_present` | Capture the pre-edge slot and pixel with the bank read. Leave visibility set through bubbles so payload holds. |
+| 94–96: accepted final x wraps | Move only for accepted pixels; wrap x to zero at row end, including width one. |
+| 97–99: slot increment/wrap | K=1 stays at zero; otherwise wrap at K−1, not binary overflow. Non-power-of-two K works. |
+| 100: saturating `rows_filled` | Count complete fresh rows. The first valid column is x=0 of image row K−1. |
+| 101–106: nonfinal x increment and block endings | Advance x for nonfinal accepted pixels. Unassigned cursor/payload state holds on bubbles. |
 
-The output remains invalid for warmup rows 0 and 1. Each drawer rotates only after *IMG_W accepted pixels*, not after a bubble.
+Before edge E, a consumer sees the preceding output. After E, bank values, captured tag, newest pixel and valid settle to the current output. A downstream register consumes it at E+1. Clear discards a simultaneous pixel; it is not a normal row-drain operation.
 
-### 4. Reset, accept, output and row rotation (lines 56–85)
+### 5. Guards — lines 108–115
 
-```systemverilog
-always_ff @(posedge clk) begin
-    if (!rst_n || clear_i) begin
-        x <= '0;
-        slot <= '0;
-        rows_filled <= '0;
-        valid_o <= 1'b0;
-        row_last_o <= 1'b0;
-        column_o <= '0;
-    end else begin
-        valid_o <= 1'b0;
-        row_last_o <= 1'b0;
-        if (valid_i) begin
-            row_mem[slot][x] <= pixel_i;
-            if (window_ready) begin
-                valid_o <= 1'b1;
-                row_last_o <= (x == IMG_W - 1);
-                column_o <= column_next;
-            end
-            if (x == IMG_W - 1) begin
-                x <= '0;
-                if (K == 1) slot <= '0;
-                else if (slot == K - 1) slot <= '0;
-                else slot <= slot + 1'b1;
-                if (rows_filled < K) rows_filled <= rows_filled + 1'b1;
-            end else begin
-                x <= x + 1'b1;
-            end
-        end
-    end
-end
-```
-
-- **Lines 56–64:** At an edge, reset or clear first zeros the cursor, warmup count, and registered outputs. It *does not clear all pixel storage*, saving a bulk erase; warmup prevents stale rows from becoming valid.
-- **Lines 65–67:** Every non-clear edge defaults output flags low. If `valid_i=0`, no write or cursor movement follows; `column_o` retains its old bits, but is invalid this edge.
-- **Line 68:** Write the just-accepted pixel into the current drawer/position. Other row slots retain their previous pixels.
-- **Lines 69–73:** Once warmed up, capture `column_next`, assert valid, and mark the final accepted x. Nonblocking assignments read the *old* row-memory values here while the newest tap bypasses that memory with `pixel_i`.
-- **Lines 74–79:** At the final accepted x, return to x=0, rotate/wrap `slot` (or keep it zero for K=1), and saturate completed-row count at K.
-- **Lines 80–85:** Otherwise advance x by one, and close the sequential blocks. A bubble executes neither path inside `valid_i`.
-
-### 5. Simulation guards and what this module cannot do (lines 87–94)
-
-```systemverilog
-// synthesis translate_off
-initial begin
-    if (K < 1 || PIXEL_W < 1 || IMG_W < 1)
-        $fatal(1, "K, PIXEL_W and IMG_W must be positive");
-end
-// synthesis translate_on
-endmodule
-`default_nettype wire
-```
-
-- **Lines 87–92:** Reject dimensions that could not describe a real row/window in simulation; excluded from the synthesized datapath.
-- **Lines 93–94:** Close module and restore nettype. No second image, disparity alignment, or SAD arithmetic is hidden here.
-
-**Edge handoff:** the row buffer registers a valid column *after* its accepted pixel edge; a downstream registered column calculator samples that registered column on the **following** edge. `row_last_o` alone does not stall the next raster row or drain the SAD engine. That scheduling still needs a controller.
+`translate_off/on` surrounds a simulation-only parameter check; zero/negative dimensions cause `$fatal`, not reset hardware. The module ends and restores the default nettype. No controller or SAD calculation follows.
 
 ## Ports
 
-| Port | Kind | Meaning |
-|---|---|---|
-| clk | control | Rising-edge clock |
-| rst_n | control | Synchronous active-low reset |
-| clear_i | control | Drop the cursor and the registered output. Wins over valid_i |
-| valid_i | input | Accept pixel_i. Bubbles do not advance x |
-| pixel_i | input | One grayscale pixel |
-| valid_o | output | column_o is a complete K-pixel window |
-| row_last_o | output | That column is the last x of a window-row. Zero when invalid |
-| column_o | output | Oldest window row in the low slice. Held while invalid, except reset/clear zeros it |
-
-Window row `j` occupies `[j*PIXEL_W +: PIXEL_W]`. Row 0 is the oldest image row in the window. Row `K-1` is the pixel just accepted.
+`clk` is rising-edge. `rst_n` is synchronous active-low reset. `clear_i` resets stream progress and visibility and wins over `valid_i`. `pixel_i` is one grayscale pixel. `valid_o` means the K-pixel column is complete. `row_last_o` only accompanies the final x of a valid window-row. `column_o[j*PIXEL_W +: PIXEL_W]` holds window row j, oldest first; payload holds during bubbles and becomes zero on reset/clear.
 
 ## Timing
 
-An accepted pixel at rising edge `t` produces its registered column after that same edge. There is no adder-tree delay here. Warmup counts **completed rows**, not clocks: the first column is the first pixel of image row `K-1`.
-
-`row_last_o` is only asserted with `valid_o`. Ends of the warmup rows do not pulse it.
+An accepted pixel at edge t produces its column after that same edge once warmup is complete. Warmup counts **completed rows, not clocks**. Ends of warmup rows do not pulse `row_last_o`. RAM read latency is matched by the bypass and captured selector; it does not add another edge to the module interface.
 
 ## Storage
 
-`row_mem[slot][x]` is the functional store. The newest tap is `pixel_i`, because the slot being written still holds the pixel from K rows ago until the write lands. Older taps read the other slots at the same x. After clear, those slots are not read until this frame rewrites them.
+For K>1, bank b's words are `g_rows.g_bank[b].bank.memory[x]`. Every accepted pixel clocks all bank reads and writes only its selected bank. The other K−1 banks supply older taps; newest comes from `newest_pixel`. Keeping K banks preserves the existing rotating-row organization rather than introducing a new K−1-bank overwrite algorithm in this review.
 
-Combinational readout of the column is intentional for this first abstraction. Quartus may map it to logic rather than M9K. A later pass can give each row a synchronous RAM without changing this port list.
-
-The functional default is `IMG_W=640`. Analysis & Synthesis of that default did not finish within 300 seconds. `Stereo_SAD_RowBuffer.qpf` therefore synthesizes `circular_row_buffer_synth`, the same module with `IMG_W=16`. That run passed with 0 errors and 0 warnings and reported 3156 logic cells before fitting. That count is not the 640-wide design, and it is not an Fmax.
+The production K=11, width=640 implementation passes Analysis & Synthesis with **11 M9K RAM nodes, 56,320 logical memory bits, 697 logic elements and 33 registers**. See [row-buffer synthesis evidence](../../docs/verification/row-buffer-synthesis.md). RAM attributes alone did not prove inference. This is not fitted timing or board proof; the earlier width-16 smoke and full-width failures remain historical baselines.
 
 ## Run
 
 ```sh
+python scripts/run_tests.py --suite row-bank
 python scripts/run_tests.py --suite row
-python scripts/run_tests.py --suite row --case 11:8:8 --vcd
+python scripts/run_tests.py --suite row --case 11:8:640
 ```
 
-The scoreboard stores a flat image and rebuilds each column from original pixels. It does not copy the ring pointer. Open **Stereo_SAD_RowBuffer.qpf** for component synthesis. See [[Accelerator Blocks.canvas]] for its place in the proposed datapath and [[Stereo Frontend Blocks.canvas]] for the row-buffer/tap interconnect.
+Eight bank cases are checked independently before the ten parent cases. The parent suite includes 640×480 and 641×480 raster streams with bubbles, clear/warmup/restart and random traffic. Its scoreboard rebuilds columns from a flat source image, not the DUT's ring. It also checks output stability before/after rising edges; pseudorandom source pixels avoid aliases hidden by wrapping 8-bit ramps.
+
+The Questa GUI macro supports `part=row-bank` and `part=row`; see [[Testbench Guide]]. The fresh automated native run was blocked by an already-open Questa process consuming the node-locked license. That user process was not closed. The passing current simulations are Icarus, not a claimed fresh native Questa simulation pass.
+
+This serial reference has been reviewed. The current [[Stereo Frontend]] instead uses [[Packed Circular Row Buffer|independently packed-loaded stores]]; do not instantiate both storage paths. See the existing [[Accelerator Blocks.canvas]] and [[Stereo Frontend Blocks.canvas]] for their roles. Interactive review of the complete compute datapath precedes publishing; the autonomous controller remains future work in [[Project Plan]].

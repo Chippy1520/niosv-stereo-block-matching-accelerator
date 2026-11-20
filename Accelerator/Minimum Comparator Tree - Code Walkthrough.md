@@ -1,7 +1,7 @@
 # Minimum comparator tree — code walkthrough
 #implemented
 
-[[Accelerator Architecture]] · [[Minimum Comparator Tree]] · [[Disparity Bank]] · [[Verification Map]]
+[[Accelerator Architecture]] · [[Minimum Comparator Tree]] · [[Project Plan#Disparity bank|disparity-bank plan]] · [[Verification Map]]
 Source: [comparator_tree.sv](../rtl/comparator_tree.sv) · Bench: [tb_comparator_tree.sv](../tests/rtl/tb_comparator_tree.sv)
 
 ## First, the story
